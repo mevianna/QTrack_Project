@@ -1,0 +1,149 @@
+const data1Q = [99.3, 99.2, 99.4, 99.1, 99.2, 99.4, 99.2, 99.3];
+const data2Q = [97.8, 97.9, 97.8, 97.3, 97.7, 97.3, 97.6, 97.4];
+
+const labels = [
+  "01/05",
+  "02/05",
+  "03/05",
+  "04/05",
+  "05/05",
+  "06/05",
+  "07/05",
+  "08/05",
+];
+
+export default function FidelityChart() {
+  const width = 500;
+  const height = 220;
+
+  const allValues = [...data1Q, ...data2Q];
+
+  const min = Math.min(...allValues) - 0.5;
+  const max = Math.max(...allValues) + 0.5;
+
+  const getPoint = (value, index, total) => {
+    const x = (index / (total - 1)) * width;
+
+    const y =
+      height -
+      ((value - min) / (max - min)) * height;
+
+    return { x, y };
+  };
+
+  const points1 = data1Q
+    .map((v, i) => {
+      const p = getPoint(v, i, data1Q.length);
+      return `${p.x},${p.y}`;
+    })
+    .join(" ");
+
+  const points2 = data2Q
+    .map((v, i) => {
+      const p = getPoint(v, i, data2Q.length);
+      return `${p.x},${p.y}`;
+    })
+    .join(" ");
+
+  return (
+    <div style={{ width: "100%" }}>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        style={{
+          width: "100%",
+          height: "220px",
+          overflow: "visible",
+        }}
+      >
+        {[0, 1, 2, 3, 4].map((i) => {
+          const y = (height / 4) * i;
+
+          return (
+            <line
+              key={i}
+              x1="0"
+              y1={y}
+              x2={width}
+              y2={y}
+              stroke="#1e293b"
+              strokeWidth="1"
+            />
+          );
+        })}
+
+        <polyline
+          fill="none"
+          stroke="#3b82f6"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          points={points1}
+        />
+
+        <polyline
+          fill="none"
+          stroke="#a855f7"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          points={points2}
+        />
+
+        {data1Q.map((value, index) => {
+          const p = getPoint(value, index, data1Q.length);
+
+          return (
+            <circle
+              key={`b-${index}`}
+              cx={p.x}
+              cy={p.y}
+              r="4"
+              fill="#3b82f6"
+            />
+          );
+        })}
+
+        {data2Q.map((value, index) => {
+          const p = getPoint(value, index, data2Q.length);
+
+          return (
+            <circle
+              key={`p-${index}`}
+              cx={p.x}
+              cy={p.y}
+              r="4"
+              fill="#a855f7"
+            />
+          );
+        })}
+      </svg>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginTop: "8px",
+          color: "#94a3b8",
+          fontSize: "12px",
+        }}
+      >
+        {labels.map((label) => (
+          <span key={label}>{label}</span>
+        ))}
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          gap: "20px",
+          marginTop: "14px",
+          color: "#cbd5e1",
+          fontSize: "14px",
+        }}
+      >
+        <span>🔵 Fidelidade 1Q</span>
+        <span>🟣 Fidelidade 2Q</span>
+      </div>
+    </div>
+  );
+}

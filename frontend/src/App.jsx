@@ -4,6 +4,8 @@ import Sidebar from './components/Sidebar'
 import MetricCard from './components/MetricCard'
 import Heatmap from './components/Heatmap'
 import ExperimentTable from './components/ExperimentTable'
+import FidelityChart from './components/FidelityChart'
+import ReadoutChart from './components/ReadoutChart'
 
 function App() {
 
@@ -56,14 +58,14 @@ function App() {
           <div className="panel">
             <h3 style={{ marginBottom: '15px', color: 'var(--text-main)' }}>Fidelidade de Portas (Média)</h3>
             <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', border: '1px dashed var(--border-color)', borderRadius: '8px' }}>
-               [Gráfico de Linha Aqui]
+               <FidelityChart />
             </div>
           </div>
 
           <div className="panel">
             <h3 style={{ marginBottom: '15px', color: 'var(--text-main)' }}>Taxa de Erro de Leitura</h3>
             <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', border: '1px dashed var(--border-color)', borderRadius: '8px' }}>
-               [Gráfico de Linha Aqui]
+               <ReadoutChart />
             </div>
           </div>
         </div>

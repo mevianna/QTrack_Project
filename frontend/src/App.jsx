@@ -796,7 +796,7 @@ function App() {
                 <input value={versaoCal} onChange={(e) => setVersaoCal(e.target.value)} type="text" placeholder="Versão dos Parâmetros" style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 45%' }} />
                 <input value={inicioCal} onChange={(e) => setInicioCal(e.target.value)} type="datetime-local" style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }} />
                 <input value={fimCal} onChange={(e) => setFimCal(e.target.value)} type="datetime-local" style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }} />
-                <select value={resultadoCal} onChange={(e) => setResultCal(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }}>
+                <select value={resultadoCal} onChange={(e) => setResultadoCal(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }}>
                   <option value="Sucesso">Sucesso</option><option value="Otimização Parcial">Otimização Parcial</option><option value="Falha Crítica">Falha Crítica</option>
                 </select>
                 <select value={idPesqCal} onChange={(e) => setIdPesqCal(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }}>

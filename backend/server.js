@@ -1370,7 +1370,7 @@ app.post('/api/db/init', async (req, res) => {
           // Pequena flutuação aleatória diária (TLS)
           const noiseT1 = (Math.random() - 0.5) * 1.5;
           
-          let t1Val = baseT1 * tempFactor * ageFactor + noiseT1;
+          let t1Val = baseT1 * ageFactor + noiseT1;
           t1Val = Math.max(5.0, t1Val);
           
           // Modelo físico de taxa de erro de leitura

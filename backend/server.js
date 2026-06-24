@@ -38,6 +38,15 @@ app.post('/api/registro-ambiente', async (req, res) => {
   }
 });
 
+app.get('/api/sequencias-pulso', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id_sequencia, nome, finalidade, versao, descricao FROM sequenciapulso ORDER BY id_sequencia;');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err.message); res.status(500).send('Erro ao buscar Sequências de Pulso');
+  }
+});
+
 // ================= 1. CRUD DE QPUs =================
 app.get('/api/qpus', async (req, res) => {
   try {
@@ -239,7 +248,8 @@ app.delete('/api/qubits/:id', async (req, res) => {
 app.get('/api/experimentos', async (req, res) => {
   try {
     const query = `
-      SELECT e.*, p.nome as pesquisador_nome, q.nome as qpu_nome
+      SELECT e.*, p.nome as pesquisador_nome, q.nome as qpu_nome,
+             (SELECT id_sequencia FROM utilizaexperimento WHERE id_experimento = e.id_experimento LIMIT 1) as id_sequencia
       FROM experimento e
       LEFT JOIN pesquisador p ON e.id_pesquisador = p.id_pesquisador
       LEFT JOIN QPU q ON e.id_qpu = q.id_qpu
@@ -253,32 +263,53 @@ app.get('/api/experimentos', async (req, res) => {
 });
 
 app.post('/api/experimentos', async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente } = req.body;
+    const { nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id_sequencia } = req.body;
+    await client.query('BEGIN');
     const query = `
       INSERT INTO experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *;
     `;
-    const result = await pool.query(query, [nome, objetivo, data_hora_inicio || null, data_hora_fim || null, status_execucao, observacoes, id_pesquisador || null, id_qpu || null, id_registro_ambiente || null]);
-    res.json(result.rows[0]);
+    const result = await client.query(query, [nome, objetivo, data_hora_inicio || null, data_hora_fim || null, status_execucao, observacoes, id_pesquisador || null, id_qpu || null, id_registro_ambiente || null]);
+    const exp = result.rows[0];
+    if (id_sequencia) {
+      await client.query('INSERT INTO utilizaexperimento (id_experimento, id_sequencia) VALUES ($1, $2);', [exp.id_experimento, id_sequencia]);
+    }
+    await client.query('COMMIT');
+    res.json(exp);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error(err.message); res.status(500).send('Erro ao inserir Experimento');
+  } finally {
+    client.release();
   }
 });
 
 app.put('/api/experimentos/:id', async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
-    const { nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente } = req.body;
+    const { nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id_sequencia } = req.body;
+    await client.query('BEGIN');
     const query = `
       UPDATE experimento 
       SET nome=$1, objetivo=$2, data_hora_inicio=$3, data_hora_fim=$4, status_execucao=$5, observacoes=$6, id_pesquisador=$7, id_qpu=$8, id_registro_ambiente=$9
       WHERE id_experimento=$10 RETURNING *;
     `;
-    const result = await pool.query(query, [nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id]);
-    res.json(result.rows[0]);
+    const result = await client.query(query, [nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id]);
+    const exp = result.rows[0];
+    await client.query('DELETE FROM utilizaexperimento WHERE id_experimento = $1;', [id]);
+    if (id_sequencia) {
+      await client.query('INSERT INTO utilizaexperimento (id_experimento, id_sequencia) VALUES ($1, $2);', [id, id_sequencia]);
+    }
+    await client.query('COMMIT');
+    res.json(exp);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error(err.message); res.status(500).send('Erro ao atualizar Experimento');
+  } finally {
+    client.release();
   }
 });
 
@@ -331,7 +362,8 @@ app.get('/api/experimentos/:id/detalhes', async (req, res) => {
 app.get('/api/calibracoes', async (req, res) => {
   try {
     const query = `
-      SELECT c.*, p.nome as pesquisador_nome, q.nome as qpu_nome
+      SELECT c.*, p.nome as pesquisador_nome, q.nome as qpu_nome,
+             (SELECT id_sequencia FROM utilizacalibracao WHERE id_calibracao = c.id_calibracao LIMIT 1) as id_sequencia
       FROM calibracao c
       LEFT JOIN pesquisador p ON c.id_pesquisador = p.id_pesquisador
       LEFT JOIN QPU q ON c.id_qpu = q.id_qpu
@@ -345,32 +377,53 @@ app.get('/api/calibracoes', async (req, res) => {
 });
 
 app.post('/api/calibracoes', async (req, res) => {
+  const client = await pool.connect();
   try {
-    const { data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente } = req.body;
+    const { data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id_sequencia } = req.body;
+    await client.query('BEGIN');
     const query = `
       INSERT INTO calibracao (data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *;
     `;
-    const result = await pool.query(query, [data_hora_inicio || null, data_hora_fim || null, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador || null, id_qpu || null, id_registro_ambiente || null]);
-    res.json(result.rows[0]);
+    const result = await client.query(query, [data_hora_inicio || null, data_hora_fim || null, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador || null, id_qpu || null, id_registro_ambiente || null]);
+    const cal = result.rows[0];
+    if (id_sequencia) {
+      await client.query('INSERT INTO utilizacalibracao (id_calibracao, id_sequencia) VALUES ($1, $2);', [cal.id_calibracao, id_sequencia]);
+    }
+    await client.query('COMMIT');
+    res.json(cal);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error(err.message); res.status(500).send('Erro ao inserir Calibração');
+  } finally {
+    client.release();
   }
 });
 
 app.put('/api/calibracoes/:id', async (req, res) => {
+  const client = await pool.connect();
   try {
     const { id } = req.params;
-    const { data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente } = req.body;
+    const { data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id_sequencia } = req.body;
+    await client.query('BEGIN');
     const query = `
       UPDATE calibracao 
       SET data_hora_inicio=$1, data_hora_fim=$2, tipo_calibracao=$3, versao_parametros=$4, resultado=$5, observacoes=$6, id_pesquisador=$7, id_qpu=$8, id_registro_ambiente=$9
       WHERE id_calibracao=$10 RETURNING *;
     `;
-    const result = await pool.query(query, [data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id]);
-    res.json(result.rows[0]);
+    const result = await client.query(query, [data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id]);
+    const cal = result.rows[0];
+    await client.query('DELETE FROM utilizacalibracao WHERE id_calibracao = $1;', [id]);
+    if (id_sequencia) {
+      await client.query('INSERT INTO utilizacalibracao (id_calibracao, id_sequencia) VALUES ($1, $2);', [id, id_sequencia]);
+    }
+    await client.query('COMMIT');
+    res.json(cal);
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error(err.message); res.status(500).send('Erro ao atualizar Calibração');
+  } finally {
+    client.release();
   }
 });
 
@@ -1147,31 +1200,33 @@ app.post('/api/db/init', async (req, res) => {
       // Pesquisadores
       await client.query("INSERT INTO pesquisador (nome, email, instituicao, area_atuacao) VALUES ('Dr. Alice Smith', 'alice@ufsc.br', 'UFSC', 'Controle Quântico'), ('Bob Jones', 'bob@ufsc.br', 'UFSC', 'Mitigação de Erros');");
 
-      // Registros Ambientais
       await client.query("INSERT INTO registroambiente (data_hora_registro, temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes) VALUES (NOW() - INTERVAL '4 days', 0.0110, 0.85, 30.5, 0.04, 0.12, 'Estável'), (NOW() - INTERVAL '3 days', 0.0105, 0.82, 31.0, 0.03, 0.11, 'Flutuação pequena'), (NOW() - INTERVAL '2 days', 0.0120, 0.90, 32.2, 0.06, 0.15, 'Porta aberta rapidamente'), (NOW() - INTERVAL '1 day', 0.0100, 0.80, 29.8, 0.02, 0.10, 'Excelente isolamento'), (NOW(), 0.0102, 0.81, 30.1, 0.03, 0.11, 'Condição nominal');");
-
-      // Experimentos (criando 5 experimentos de calibração/caracterização diários para o histórico, e outros de teste)
-      // Experimento 1 (Fidelidade original): 3 dias atrás
-      await client.query("INSERT INTO experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) VALUES ('Fidelidade CNOT', 'Medir fidelidade de porta de dois qubits', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days' + INTERVAL '1 hour', 'Concluído', 'Fidelidade aceitável', 1, 1, 2);");
+      const expValues = [];
+      // Experimento 1 (Fidelidade original): 203 dias atrás
+      expValues.push("('Fidelidade CNOT', 'Medir fidelidade de porta de dois qubits', NOW() - INTERVAL '203 days', NOW() - INTERVAL '203 days' + INTERVAL '1 hour', 'Concluído', 'Fidelidade aceitável', 1, 1, 2)");
       
-      // Experimentos 2, 3, 4, 5, 6 (Um experimento para cada um dos 5 dias de medição de telemetria)
-      for (let day = 4; day >= 0; day--) {
-        await client.query(`INSERT INTO experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) VALUES ('Caracterização Diária T1/Portas', 'Medição diária automática de telemetria e calibração', NOW() - ($1 * INTERVAL '1 day'), NOW() - ($1 * INTERVAL '1 day') + INTERVAL '30 minutes', 'Concluído', 'Rotina automatizada', 2, 1, $2);`, [day, 5 - day]);
+      // Experimentos 2 a 202
+      for (let day = 200; day >= 0; day--) {
+        const ambId = (day % 5) + 1;
+        expValues.push(`('Caracterização Diária T1/Portas', 'Medição diária automática de telemetria e calibração', NOW() - (${day} * INTERVAL '1 day'), NOW() - (${day} * INTERVAL '1 day') + INTERVAL '30 minutes', 'Concluído', 'Rotina automatizada', 2, 1, ${ambId})`);
       }
       
-      // Experimento 7 (Caracterização Óptica)
-      await client.query("INSERT INTO experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) VALUES ('Caracterização Óptica', 'Medir fontes de fótons únicos', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day' + INTERVAL '2 hours', 'Concluído', 'Taxa de coincidência excelente', 1, 2, 4);");
+      // Experimento 203 (Caracterização Óptica)
+      expValues.push("('Caracterização Óptica', 'Medir fontes de fótons únicos', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day' + INTERVAL '2 hours', 'Concluído', 'Taxa de coincidência excelente', 1, 2, 4)");
       
-      // Experimento 8 (Simulação VQE)
-      await client.query("INSERT INTO experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) VALUES ('Simulação VQE', 'Rodar algoritmo VQE para molécula de H2', NOW(), NULL, 'Planejado', 'Executando em background', 2, 1, 5);");
+      // Experimento 204 (Simulação VQE)
+      expValues.push("('Simulação VQE', 'Rodar algoritmo VQE para molécula de H2', NOW(), NULL, 'Planejado', 'Executando em background', 2, 1, 5)");
+      
+      const insertExpQuery = `INSERT INTO experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) VALUES ${expValues.join(',\n')};`;
+      await client.query(insertExpQuery);
 
       // Calibrações
       await client.query(`
         INSERT INTO calibracao (data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) 
         VALUES 
-        (NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days' + INTERVAL '2 hours', 'Frequência de Qubit', 'v1.4.2', 'Sucesso', 'Frequências calibradas com erro < 100 kHz', 1, 1, 1), 
-        (NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days' + INTERVAL '1 hour', 'Pulso de Pi', 'v1.4.3', 'Sucesso', 'Amplitude ajustada para 12.3 mV', 2, 1, 3),
-        (NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day' + INTERVAL '30 minutes', 'Calibração de Leitura', 'v1.4.4', 'Falha', 'Ruído excessivo no amplificador criogênico HEMT', 1, 1, 4);
+        (NOW() - INTERVAL '204 days', NOW() - INTERVAL '204 days' + INTERVAL '2 hours', 'Frequência de Qubit', 'v1.4.2', 'Sucesso', 'Frequências calibradas com erro < 100 kHz', 1, 1, 1), 
+        (NOW() - INTERVAL '202 days', NOW() - INTERVAL '202 days' + INTERVAL '1 hour', 'Pulso de Pi', 'v1.4.3', 'Sucesso', 'Amplitude ajustada para 12.3 mV', 2, 1, 3),
+        (NOW() - INTERVAL '201 days', NOW() - INTERVAL '201 days' + INTERVAL '30 minutes', 'Calibração de Leitura', 'v1.4.4', 'Falha', 'Ruído excessivo no amplificador criogênico HEMT', 1, 1, 4);
       `);
 
       // Porta Quantica
@@ -1179,20 +1234,39 @@ app.post('/api/db/init', async (req, res) => {
 
       // MedeQubit (T1 e TaxaErro) dinâmico para todos os qubits gerados, associando ao experimento de cada dia
       const allQubits = await client.query('SELECT id_qubit FROM qubit;');
-      for (let day = 4; day >= 0; day--) {
-        const expId = 6 - day; // Mapeia dia 4 -> id_exp 2, dia 3 -> id_exp 3, ..., dia 0 -> id_exp 6
+      const qubitValues = [];
+      for (let day = 200; day >= 0; day--) {
+        const expId = 202 - day; // Mapeia dia 200 -> id_exp 2, dia 199 -> id_exp 3, ..., dia 0 -> id_exp 202
         for (const row of allQubits.rows) {
           const qId = row.id_qubit;
-          await client.query(`INSERT INTO medequbit (id_experimento, id_qubit, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES ($1, $2, 'T1', $3, 'μs', NOW() - ($4 * INTERVAL '1 day'), 'Decaimento Livre');`, [expId, qId, 60.0 + Math.sin(qId + day) * 15.0, day]);
-          await client.query(`INSERT INTO medequbit (id_experimento, id_qubit, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES ($1, $2, 'TaxaErro', $3, 'taxa', NOW() - ($4 * INTERVAL '1 day'), 'Tomografia de Leitura');`, [expId, qId, 0.01 + Math.cos(qId - day) * 0.005, day]);
+          const t1Val = 60.0 + Math.sin(qId + day) * 15.0;
+          const errVal = 0.01 + Math.cos(qId - day) * 0.005;
+          qubitValues.push(`(${expId}, ${qId}, 'T1', ${t1Val}, 'μs', NOW() - (${day} * INTERVAL '1 day'), 'Decaimento Livre')`);
+          qubitValues.push(`(${expId}, ${qId}, 'TaxaErro', ${errVal}, 'taxa', NOW() - (${day} * INTERVAL '1 day'), 'Tomografia de Leitura')`);
         }
+      }
+      
+      const batchSize = 1000;
+      for (let i = 0; i < qubitValues.length; i += batchSize) {
+        const batch = qubitValues.slice(i, i + batchSize);
+        const insertBatchQuery = `INSERT INTO medequbit (id_experimento, id_qubit, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES ${batch.join(',\n')};`;
+        await client.query(insertBatchQuery);
       }
 
       // MedePorta (Fidelidade) associando ao experimento de cada dia
-      for (let day = 4; day >= 0; day--) {
-        const expId = 6 - day; // Mapeia dia 4 -> id_exp 2, dia 3 -> id_exp 3, ..., dia 0 -> id_exp 6
-        await client.query(`INSERT INTO medeporta (id_experimento, id_porta, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES ($1, 1, 'Fidelidade', $2, 'taxa', NOW() - ($3 * INTERVAL '1 day'), 'Randomized Benchmarking');`, [expId, 0.992 + Math.sin(day) * 0.003, day]);
-        await client.query(`INSERT INTO medeporta (id_experimento, id_porta, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES ($1, 3, 'Fidelidade', $2, 'taxa', NOW() - ($3 * INTERVAL '1 day'), 'Interleaved RB');`, [expId, 0.975 + Math.cos(day) * 0.004, day]);
+      const portaValues = [];
+      for (let day = 200; day >= 0; day--) {
+        const expId = 202 - day; // Mapeia dia 200 -> id_exp 2, dia 199 -> id_exp 3, ..., dia 0 -> id_exp 202
+        const val1 = 0.992 + Math.sin(day) * 0.003;
+        const val2 = 0.975 + Math.cos(day) * 0.004;
+        portaValues.push(`(${expId}, 1, 'Fidelidade', ${val1}, 'taxa', NOW() - (${day} * INTERVAL '1 day'), 'Randomized Benchmarking')`);
+        portaValues.push(`(${expId}, 3, 'Fidelidade', ${val2}, 'taxa', NOW() - (${day} * INTERVAL '1 day'), 'Interleaved RB')`);
+      }
+      
+      for (let i = 0; i < portaValues.length; i += batchSize) {
+        const batch = portaValues.slice(i, i + batchSize);
+        const insertBatchQuery = `INSERT INTO medeporta (id_experimento, id_porta, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES ${batch.join(',\n')};`;
+        await client.query(insertBatchQuery);
       }
 
       // Sequencias de Pulso

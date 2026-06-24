@@ -146,6 +146,10 @@ function App() {
   const [campoAmbCal, setCampoAmbCal] = useState('0.11')
   const [obsAmbCal, setObsAmbCal] = useState('Condição nominal')
 
+  const [listaSequencias, setListaSequencias] = useState([])
+  const [idSeqExp, setIdSeqExp] = useState('')
+  const [idSeqCal, setIdSeqCal] = useState('')
+
   // Estado para filtrar a QPU visualizada no Relatório 1
   const [qpuFiltrada, setQpuFiltrada] = useState('todas');
   const [detalhesModalOpen, setDetalhesModalOpen] = useState(false);
@@ -182,11 +186,13 @@ function App() {
   const limparFormExperimento = () => {
     setNomeExp(''); setObjetivoExp(''); setInicioExp(''); setFimExp(''); setStatusExp('Planejado'); setObsExp(''); setIdPesqExp(''); setIdQpuExp(''); setIdAmbExp('');
     setTempAmbExp('0.0102'); setPresAmbExp('0.81'); setUmidAmbExp('30.1'); setVibAmbExp('0.03'); setCampoAmbExp('0.11'); setObsAmbExp('Condição nominal');
+    setIdSeqExp('');
     setIdExpEditando(null);
   }
   const limparFormCalibracao = () => {
     setInicioCal(''); setFimCal(''); setTipoCal(''); setVersaoCal(''); setResultadoCal('Sucesso'); setObsCal(''); setIdPesqCal(''); setIdQpuCal(''); setIdAmbCal('');
     setTempAmbCal('0.0102'); setPresAmbCal('0.81'); setUmidAmbCal('30.1'); setVibAmbCal('0.03'); setCampoAmbCal('0.11'); setObsAmbCal('Condição nominal');
+    setIdSeqCal('');
     setIdCalEditando(null);
   }
 
@@ -335,7 +341,8 @@ function App() {
           observacoes: obsExp,
           id_pesquisador: idPesqExp || null,
           id_qpu: idQpuExp || null,
-          id_registro_ambiente: finalIdAmb ? Number(finalIdAmb) : null
+          id_registro_ambiente: finalIdAmb ? Number(finalIdAmb) : null,
+          id_sequencia: idSeqExp ? Number(idSeqExp) : null
         })
       });
       if (res.ok) {
@@ -393,7 +400,8 @@ function App() {
           observacoes: obsCal,
           id_pesquisador: idPesqCal || null,
           id_qpu: idQpuCal || null,
-          id_registro_ambiente: finalIdAmb ? Number(finalIdAmb) : null
+          id_registro_ambiente: finalIdAmb ? Number(finalIdAmb) : null,
+          id_sequencia: idSeqCal ? Number(idSeqCal) : null
         })
       });
       if (res.ok) {
@@ -472,6 +480,7 @@ function App() {
       fetch('http://localhost:8000/api/qpus').then(res => res.json()).then(dados => setListaQpus(dados));
       fetch('http://localhost:8000/api/pesquisadores').then(res => res.json()).then(dados => setListaPesquisadores(dados));
       fetch('http://localhost:8000/api/registro-ambiente').then(res => res.json()).then(dados => setListaAmbientes(dados));
+      fetch('http://localhost:8000/api/sequencias-pulso').then(res => res.json()).then(dados => setListaSequencias(dados));
       if (telaAtual === 'experimentos') fetch('http://localhost:8000/api/experimentos').then(res => res.json()).then(dados => setListaExperimentos(dados));
       if (telaAtual === 'calibracoes') fetch('http://localhost:8000/api/calibracoes').then(res => res.json()).then(dados => setListaCalibracoes(dados));
     }
@@ -920,6 +929,10 @@ function App() {
                   <option value="novo">+ Criar Novo Registro de Ambiente</option>
                   {listaAmbientes.map(a => <option key={a.id_registro_ambiente} value={a.id_registro_ambiente}>Log #{a.id_registro_ambiente} ({new Date(a.data_hora_registro).toLocaleString('pt-BR')})</option>)}
                 </select>
+                <select value={idSeqExp} onChange={(e) => setIdSeqExp(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }}>
+                  <option value="">Sequência de Pulso Vinculada (Opcional)</option>
+                  {listaSequencias.map(s => <option key={s.id_sequencia} value={s.id_sequencia}>{s.nome} ({s.finalidade})</option>)}
+                </select>
                 {idAmbExp === 'novo' && (
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', width: '100%', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px dashed var(--border-color)', marginTop: '5px', marginBottom: '10px' }}>
                     <h4 style={{ width: '100%', margin: '0 0 5px 0', fontSize: '0.9rem', color: 'var(--accent-purple)' }}>Novas Condições Ambientais (Valores Padrão Preenchidos)</h4>
@@ -963,7 +976,7 @@ function App() {
                       <td style={{ padding: '12px' }}>{e.id_experimento}</td><td style={{ padding: '12px', fontWeight: 'bold' }}>{e.nome}</td><td style={{ padding: '12px' }}>{e.qpu_nome}</td><td style={{ padding: '12px' }}>{e.pesquisador_nome}</td><td style={{ padding: '12px' }}>{e.status_execucao}</td>
                       <td>
                         <button onClick={() => handleVerDetalhesExperimento(e.id_experimento)} style={{ marginRight: '8px', background: 'transparent', border: '1px solid var(--accent-purple)', color: 'var(--accent-purple)', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Detalhes</button>
-                        <button onClick={() => { setIdExpEditando(e.id_experimento); setNomeExp(e.nome); setObjetivoExp(e.objetivo); setStatusExp(e.status_execucao); setObsExp(e.observacoes || ''); setIdPesqExp(e.id_pesquisador || ''); setIdQpuExp(e.id_qpu || ''); setIdAmbExp(e.id_registro_ambiente || ''); }} style={{ marginRight: '8px', background: 'transparent', border: '1px solid #eab308', color: '#eab308', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Editar</button>
+                        <button onClick={() => { setIdExpEditando(e.id_experimento); setNomeExp(e.nome); setObjetivoExp(e.objetivo); setStatusExp(e.status_execucao); setObsExp(e.observacoes || ''); setIdPesqExp(e.id_pesquisador || ''); setIdQpuExp(e.id_qpu || ''); setIdAmbExp(e.id_registro_ambiente || ''); setIdSeqExp(e.id_sequencia || ''); }} style={{ marginRight: '8px', background: 'transparent', border: '1px solid #eab308', color: '#eab308', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Editar</button>
                         <button onClick={() => handleExcluirExperimento(e.id_experimento)} style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Excluir</button>
                       </td>
                     </tr>
@@ -1003,6 +1016,10 @@ function App() {
                   <option value="">Log de Ambiente Vinculado</option>
                   <option value="novo">+ Criar Novo Registro de Ambiente</option>
                   {listaAmbientes.map(a => <option key={a.id_registro_ambiente} value={a.id_registro_ambiente}>Log #{a.id_registro_ambiente}</option>)}
+                </select>
+                <select value={idSeqCal} onChange={(e) => setIdSeqCal(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }}>
+                  <option value="">Sequência de Pulso Vinculada (Opcional)</option>
+                  {listaSequencias.map(s => <option key={s.id_sequencia} value={s.id_sequencia}>{s.nome} ({s.finalidade})</option>)}
                 </select>
                 {idAmbCal === 'novo' && (
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', width: '100%', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px dashed var(--border-color)', marginTop: '5px', marginBottom: '10px' }}>
@@ -1047,7 +1064,7 @@ function App() {
                       <td style={{ padding: '12px' }}>{c.id_calibracao}</td><td style={{ padding: '12px', fontWeight: 'bold' }}>{c.tipo_calibracao}</td><td style={{ padding: '12px' }}>{c.qpu_nome}</td><td style={{ padding: '12px' }}>{c.versao_parametros}</td><td style={{ padding: '12px' }}>{c.resultado}</td>
                       <td>
                         <button onClick={() => handleVerDetalhesCalibracao(c.id_calibracao)} style={{ marginRight: '8px', background: 'transparent', border: '1px solid var(--accent-purple)', color: 'var(--accent-purple)', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Detalhes</button>
-                        <button onClick={() => { setIdCalEditando(c.id_calibracao); setInicioCal(c.data_hora_inicio || ''); setFimCal(c.data_hora_fim || ''); setTipoCal(c.tipo_calibracao); setVersaoCal(c.versao_parametros); setResultadoCal(c.resultado); setObsCal(c.observacoes || ''); setIdPesqCal(c.id_pesquisador || ''); setIdQpuCal(c.id_qpu || ''); setIdAmbCal(c.id_registro_ambiente || ''); }} style={{ marginRight: '8px', background: 'transparent', border: '1px solid #eab308', color: '#eab308', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Editar</button>
+                        <button onClick={() => { setIdCalEditando(c.id_calibracao); setInicioCal(c.data_hora_inicio || ''); setFimCal(c.data_hora_fim || ''); setTipoCal(c.tipo_calibracao); setVersaoCal(c.versao_parametros); setResultadoCal(c.resultado); setObsCal(c.observacoes || ''); setIdPesqCal(c.id_pesquisador || ''); setIdQpuCal(c.id_qpu || ''); setIdAmbCal(c.id_registro_ambiente || ''); setIdSeqCal(c.id_sequencia || ''); }} style={{ marginRight: '8px', background: 'transparent', border: '1px solid #eab308', color: '#eab308', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Editar</button>
                         <button onClick={() => handleExcluirCalibracao(c.id_calibracao)} style={{ background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Excluir</button>
                       </td>
                     </tr>

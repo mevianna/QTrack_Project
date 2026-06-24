@@ -25,6 +25,19 @@ app.get('/api/registro-ambiente', async (req, res) => {
   }
 });
 
+app.post('/api/registro-ambiente', async (req, res) => {
+  const { temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO registroambiente (temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;',
+      [temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err.message); res.status(500).send('Erro ao inserir Registro de Ambiente');
+  }
+});
+
 // ================= 1. CRUD DE QPUs =================
 app.get('/api/qpus', async (req, res) => {
   try {

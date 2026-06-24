@@ -131,6 +131,21 @@ function App() {
   const [idAmbCal, setIdAmbCal] = useState('')
   const [idCalEditando, setIdCalEditando] = useState(null)
 
+  // 7. Novos campos de Ambiente (para Experimentos e Calibrações)
+  const [tempAmbExp, setTempAmbExp] = useState('0.0102')
+  const [presAmbExp, setPresAmbExp] = useState('0.81')
+  const [umidAmbExp, setUmidAmbExp] = useState('30.1')
+  const [vibAmbExp, setVibAmbExp] = useState('0.03')
+  const [campoAmbExp, setCampoAmbExp] = useState('0.11')
+  const [obsAmbExp, setObsAmbExp] = useState('Condição nominal')
+
+  const [tempAmbCal, setTempAmbCal] = useState('0.0102')
+  const [presAmbCal, setPresAmbCal] = useState('0.81')
+  const [umidAmbCal, setUmidAmbCal] = useState('30.1')
+  const [vibAmbCal, setVibAmbCal] = useState('0.03')
+  const [campoAmbCal, setCampoAmbCal] = useState('0.11')
+  const [obsAmbCal, setObsAmbCal] = useState('Condição nominal')
+
   // Estado para filtrar a QPU visualizada no Relatório 1
   const [qpuFiltrada, setQpuFiltrada] = useState('todas');
   const [detalhesModalOpen, setDetalhesModalOpen] = useState(false);
@@ -165,10 +180,14 @@ function App() {
     setNomePesq(''); setEmailPesq(''); setInstituicaoPesq(''); setAreaPesq(''); setIdPesqEditando(null);
   }
   const limparFormExperimento = () => {
-    setNomeExp(''); setObjetivoExp(''); setInicioExp(''); setFimExp(''); setStatusExp('Planejado'); setObsExp(''); setIdPesqExp(''); setIdQpuExp(''); setIdAmbExp(''); setIdExpEditando(null);
+    setNomeExp(''); setObjetivoExp(''); setInicioExp(''); setFimExp(''); setStatusExp('Planejado'); setObsExp(''); setIdPesqExp(''); setIdQpuExp(''); setIdAmbExp('');
+    setTempAmbExp('0.0102'); setPresAmbExp('0.81'); setUmidAmbExp('30.1'); setVibAmbExp('0.03'); setCampoAmbExp('0.11'); setObsAmbExp('Condição nominal');
+    setIdExpEditando(null);
   }
   const limparFormCalibracao = () => {
-    setInicioCal(''); setFimCal(''); setTipoCal(''); setVersaoCal(''); setResultadoCal('Sucesso'); setObsCal(''); setIdPesqCal(''); setIdQpuCal(''); setIdAmbCal(''); setIdCalEditando(null);
+    setInicioCal(''); setFimCal(''); setTipoCal(''); setVersaoCal(''); setResultadoCal('Sucesso'); setObsCal(''); setIdPesqCal(''); setIdQpuCal(''); setIdAmbCal('');
+    setTempAmbCal('0.0102'); setPresAmbCal('0.81'); setUmidAmbCal('30.1'); setVibAmbCal('0.03'); setCampoAmbCal('0.11'); setObsAmbCal('Condição nominal');
+    setIdCalEditando(null);
   }
 
   // ================= PREENCHIMENTO PARA EDIÇÃO =================
@@ -283,13 +302,47 @@ function App() {
     const url = idExpEditando ? `http://localhost:8000/api/experimentos/${idExpEditando}` : 'http://localhost:8000/api/experimentos';
     const metodo = idExpEditando ? 'PUT' : 'POST';
     try {
+      let finalIdAmb = idAmbExp;
+      if (idAmbExp === 'novo') {
+        const ambRes = await fetch('http://localhost:8000/api/registro-ambiente', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            temperatura: Number(tempAmbExp),
+            pressao: Number(presAmbExp),
+            umidade: Number(umidAmbExp),
+            vibracao: Number(vibAmbExp),
+            campo_magnetico: Number(campoAmbExp),
+            observacoes: obsAmbExp
+          })
+        });
+        if (ambRes.ok) {
+          const ambData = await ambRes.json();
+          finalIdAmb = ambData.id_registro_ambiente;
+        } else {
+          return alert("Erro ao criar novo registro de ambiente!");
+        }
+      }
+
       const res = await fetch(url, {
         method: metodo, headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: nomeExp, objetivo: objetivoExp, data_hora_inicio: inicioExp || null, data_hora_fim: fimExp || null, status_execucao: statusExp, observacoes: obsExp, id_pesquisador: idPesqExp || null, id_qpu: idQpuExp || null, id_registro_ambiente: idAmbExp || null })
+        body: JSON.stringify({
+          nome: nomeExp,
+          objetivo: objetivoExp,
+          data_hora_inicio: inicioExp || null,
+          data_hora_fim: fimExp || null,
+          status_execucao: statusExp,
+          observacoes: obsExp,
+          id_pesquisador: idPesqExp || null,
+          id_qpu: idQpuExp || null,
+          id_registro_ambiente: finalIdAmb ? Number(finalIdAmb) : null
+        })
       });
       if (res.ok) {
-        alert("Experimento salvo com sucesso!"); limparFormExperimento();
+        alert("Experimento salvo com sucesso!");
+        limparFormExperimento();
         fetch('http://localhost:8000/api/experimentos').then(r => r.json()).then(d => setListaExperimentos(d));
+        fetch('http://localhost:8000/api/registro-ambiente').then(r => r.json()).then(d => setListaAmbientes(d));
       }
     } catch (err) { console.error(err); }
   }
@@ -307,13 +360,47 @@ function App() {
     const url = idCalEditando ? `http://localhost:8000/api/calibracoes/${idCalEditando}` : 'http://localhost:8000/api/calibracoes';
     const metodo = idCalEditando ? 'PUT' : 'POST';
     try {
+      let finalIdAmb = idAmbCal;
+      if (idAmbCal === 'novo') {
+        const ambRes = await fetch('http://localhost:8000/api/registro-ambiente', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            temperatura: Number(tempAmbCal),
+            pressao: Number(presAmbCal),
+            umidade: Number(umidAmbCal),
+            vibracao: Number(vibAmbCal),
+            campo_magnetico: Number(campoAmbCal),
+            observacoes: obsAmbCal
+          })
+        });
+        if (ambRes.ok) {
+          const ambData = await ambRes.json();
+          finalIdAmb = ambData.id_registro_ambiente;
+        } else {
+          return alert("Erro ao criar novo registro de ambiente!");
+        }
+      }
+
       const res = await fetch(url, {
         method: metodo, headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data_hora_inicio: inicioCal || null, data_hora_fim: fimCal || null, tipo_calibracao: tipoCal, versao_parametros: versaoCal, resultado: resultadoCal, observacoes: obsCal, id_pesquisador: idPesqCal || null, id_qpu: idQpuCal || null, id_registro_ambiente: idAmbCal || null })
+        body: JSON.stringify({
+          data_hora_inicio: inicioCal || null,
+          data_hora_fim: fimCal || null,
+          tipo_calibracao: tipoCal,
+          versao_parametros: versaoCal,
+          resultado: resultadoCal,
+          observacoes: obsCal,
+          id_pesquisador: idPesqCal || null,
+          id_qpu: idQpuCal || null,
+          id_registro_ambiente: finalIdAmb ? Number(finalIdAmb) : null
+        })
       });
       if (res.ok) {
-        alert("Calibração salva com sucesso!"); limparFormCalibracao();
+        alert("Calibração salva com sucesso!");
+        limparFormCalibracao();
         fetch('http://localhost:8000/api/calibracoes').then(r => r.json()).then(d => setListaCalibracoes(d));
+        fetch('http://localhost:8000/api/registro-ambiente').then(r => r.json()).then(d => setListaAmbientes(d));
       }
     } catch (err) { console.error(err); }
   }
@@ -830,8 +917,38 @@ function App() {
                 </select>
                 <select value={idAmbExp} onChange={(e) => setIdAmbExp(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }}>
                   <option value="">Log de Ambiente Vinculado</option>
+                  <option value="novo">+ Criar Novo Registro de Ambiente</option>
                   {listaAmbientes.map(a => <option key={a.id_registro_ambiente} value={a.id_registro_ambiente}>Log #{a.id_registro_ambiente} ({new Date(a.data_hora_registro).toLocaleString('pt-BR')})</option>)}
                 </select>
+                {idAmbExp === 'novo' && (
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', width: '100%', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px dashed var(--border-color)', marginTop: '5px', marginBottom: '10px' }}>
+                    <h4 style={{ width: '100%', margin: '0 0 5px 0', fontSize: '0.9rem', color: 'var(--accent-purple)' }}>Novas Condições Ambientais (Valores Padrão Preenchidos)</h4>
+                    <div style={{ flex: '1 1 15%', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Temp. (K)</label>
+                      <input type="number" step="0.0001" value={tempAmbExp} onChange={(e) => setTempAmbExp(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }} />
+                    </div>
+                    <div style={{ flex: '1 1 15%', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Pressão (atm)</label>
+                      <input type="number" step="0.01" value={presAmbExp} onChange={(e) => setPresAmbExp(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }} />
+                    </div>
+                    <div style={{ flex: '1 1 15%', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Umidade (%)</label>
+                      <input type="number" step="0.1" value={umidAmbExp} onChange={(e) => setUmidAmbExp(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }} />
+                    </div>
+                    <div style={{ flex: '1 1 15%', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Vibração (mm/s)</label>
+                      <input type="number" step="0.01" value={vibAmbExp} onChange={(e) => setVibAmbExp(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }} />
+                    </div>
+                    <div style={{ flex: '1 1 15%', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Campo Mag. (mT)</label>
+                      <input type="number" step="0.01" value={campoAmbExp} onChange={(e) => setCampoAmbExp(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }} />
+                    </div>
+                    <div style={{ flex: '1 1 30%', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Observações</label>
+                      <input type="text" value={obsAmbExp} onChange={(e) => setObsAmbExp(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }} />
+                    </div>
+                  </div>
+                )}
                 <input value={obsExp} onChange={(e) => setObsExp(e.target.value)} type="text" placeholder="Observações Gerais" style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 100%' }} />
                 <button onClick={handleSalvarExperimento} style={{ width: '100%', padding: '10px', background: idExpEditando ? '#eab308' : 'var(--accent-purple)', color: idExpEditando ? 'black' : 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}>{idExpEditando ? 'Atualizar Experimento' : 'Salvar Experimento'}</button>
               </div>
@@ -884,8 +1001,38 @@ function App() {
                 </select>
                 <select value={idAmbCal} onChange={(e) => setIdAmbCal(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }}>
                   <option value="">Log de Ambiente Vinculado</option>
+                  <option value="novo">+ Criar Novo Registro de Ambiente</option>
                   {listaAmbientes.map(a => <option key={a.id_registro_ambiente} value={a.id_registro_ambiente}>Log #{a.id_registro_ambiente}</option>)}
                 </select>
+                {idAmbCal === 'novo' && (
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', width: '100%', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px dashed var(--border-color)', marginTop: '5px', marginBottom: '10px' }}>
+                    <h4 style={{ width: '100%', margin: '0 0 5px 0', fontSize: '0.9rem', color: 'var(--accent-purple)' }}>Novas Condições Ambientais (Valores Padrão Preenchidos)</h4>
+                    <div style={{ flex: '1 1 15%', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Temp. (K)</label>
+                      <input type="number" step="0.0001" value={tempAmbCal} onChange={(e) => setTempAmbCal(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }} />
+                    </div>
+                    <div style={{ flex: '1 1 15%', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Pressão (atm)</label>
+                      <input type="number" step="0.01" value={presAmbCal} onChange={(e) => setPresAmbCal(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }} />
+                    </div>
+                    <div style={{ flex: '1 1 15%', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Umidade (%)</label>
+                      <input type="number" step="0.1" value={umidAmbCal} onChange={(e) => setUmidAmbCal(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }} />
+                    </div>
+                    <div style={{ flex: '1 1 15%', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Vibração (mm/s)</label>
+                      <input type="number" step="0.01" value={vibAmbCal} onChange={(e) => setVibAmbCal(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }} />
+                    </div>
+                    <div style={{ flex: '1 1 15%', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Campo Mag. (mT)</label>
+                      <input type="number" step="0.01" value={campoAmbCal} onChange={(e) => setCampoAmbCal(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }} />
+                    </div>
+                    <div style={{ flex: '1 1 30%', display: 'flex', flexDirection: 'column' }}>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '3px' }}>Observações</label>
+                      <input type="text" value={obsAmbCal} onChange={(e) => setObsAmbCal(e.target.value)} style={{ padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white' }} />
+                    </div>
+                  </div>
+                )}
                 <input value={obsCal} onChange={(e) => setObsCal(e.target.value)} type="text" placeholder="Observações" style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 100%' }} />
                 <button onClick={handleSalvarCalibracao} style={{ width: '100%', padding: '10px', background: idCalEditando ? '#eab308' : 'var(--accent-purple)', color: idCalEditando ? 'black' : 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}>{idCalEditando ? 'Atualizar Calibração' : 'Salvar Calibração'}</button>
               </div>

@@ -1,79 +1,121 @@
-export default function ReadoutChart({ historico = [] }) {
-  let data = [0.6, 0.8, 1.4, 1.0, 0.7, 0.9, 0.8, 0.5];
-  let labels = [
-    "01/05",
-    "02/05",
-    "03/05",
-    "04/05",
-    "05/05",
-    "06/05",
-    "07/05",
-    "08/05",
-  ];
+import React from 'react';
 
-  if (historico && historico.length > 0) {
-    const dates = historico.map(item => item.data);
-    const values = historico.map(item => {
-      const rawVal = Number(item.media);
-      return rawVal <= 1 ? rawVal * 100 : rawVal;
-    });
-    if (dates.length >= 2) {
-      labels = dates;
-      data = values;
+export default function ReadoutChart({ distribuicao = [] }) {
+  // Fallback de dados caso a distribuição ainda esteja carregando
+  let values = distribuicao && distribuicao.length > 0
+    ? distribuicao.map(item => Number(item.t1_valor))
+    : [60, 65, 72, 58, 63, 85, 78, 66, 74, 82, 55, 68, 71, 80, 77, 59, 64, 69, 73, 76];
+
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  
+  // Vamos criar 5 faixas (bins) de distribuição
+  const binCount = 5;
+  const step = (maxVal - minVal) / binCount;
+  
+  const bins = Array.from({ length: binCount }, (_, i) => {
+    const start = minVal + i * step;
+    const end = start + step;
+    return {
+      label: `${start.toFixed(0)}-${end.toFixed(0)} μs`,
+      count: 0,
+      min: start,
+      max: end
+    };
+  });
+  
+  // Distribuir os valores dos qubits nos bins
+  values.forEach(v => {
+    for (let i = 0; i < binCount; i++) {
+      if (v >= bins[i].min && (i === binCount - 1 ? v <= bins[i].max : v < bins[i].max)) {
+        bins[i].count++;
+        break;
+      }
     }
-  }
-
+  });
+  
+  const maxCount = Math.max(...bins.map(b => b.count), 1);
   const width = 500;
-  const height = 220;
-
-  const points = data
-    .map((value, index) => {
-      const x = (index / (data.length - 1)) * width;
-
-      const y =
-        height -
-        (value / 2) * height;
-
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  const area =
-    `0,${height} ` +
-    points +
-    ` ${width},${height}`;
+  const height = 180; // Altura ajustada para caber no painel perfeitamente
 
   return (
-    <div style={{ width: "100%" }}>
+    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
       <svg
         viewBox={`0 0 ${width} ${height}`}
-        style={{ width: "100%", height: "220px" }}
-      >
-        <polygon
-          points={area}
-          fill="rgba(245,158,11,0.15)"
-        />
-
-        <polyline
-          fill="none"
-          stroke="#f59e0b"
-          strokeWidth="4"
-          points={points}
-        />
-      </svg>
-
-      <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginTop: "8px",
-          color: "#94a3b8",
-          fontSize: "12px",
+          width: "100%",
+          height: "140px",
+          overflow: "visible",
         }}
       >
-        {labels.map(label => (
-          <span key={label}>{label}</span>
-        ))}
+        {/* Linhas de Grade de Fundo */}
+        {[0, 1, 2, 3, 4].map((i) => {
+          const y = (height / 4) * i;
+          return (
+            <line
+              key={i}
+              x1="0"
+              y1={y}
+              x2={width}
+              y2={y}
+              stroke="var(--border-color)"
+              strokeWidth="1"
+              opacity="0.1"
+            />
+          );
+        })}
+
+        {/* Barras do Histograma */}
+        {bins.map((bin, i) => {
+          const barWidth = (width / binCount) - 16;
+          const barHeight = (bin.count / maxCount) * (height - 35);
+          const x = i * (width / binCount) + 8;
+          const y = height - 20 - barHeight;
+
+          return (
+            <g key={i}>
+              {/* Barra com Gradiente ou Cor Amber da Interface */}
+              <rect
+                x={x}
+                y={y}
+                width={barWidth}
+                height={barHeight}
+                fill="#f59e0b"
+                opacity="0.85"
+                rx="4"
+                ry="4"
+                style={{ transition: "all 0.3s ease" }}
+              />
+              {/* Texto com a Quantidade de Qubits em cada Faixa */}
+              {bin.count > 0 && (
+                <text
+                  x={x + barWidth / 2}
+                  y={y - 6}
+                  fill="var(--text-main)"
+                  fontSize="11px"
+                  fontWeight="bold"
+                  textAnchor="middle"
+                >
+                  {bin.count} {bin.count === 1 ? 'Qubit' : 'Qubits'}
+                </text>
+              )}
+              {/* Rótulo da Faixa (Eixo X) */}
+              <text
+                x={x + barWidth / 2}
+                y={height - 5}
+                fill="var(--text-muted)"
+                fontSize="10px"
+                textAnchor="middle"
+              >
+                {bin.label}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+
+      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '2px' }}>
+        Amostragem de dispersão de tempos de coerência da QPU atual
       </div>
     </div>
   );

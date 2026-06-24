@@ -580,13 +580,32 @@ app.get('/api/dashboard/qubits/:id_qpu', async (req, res) => {
       LIMIT 5;
     `, [id_qpu]);
 
+    // Obter o T1 mais recente de cada qubit desta QPU para o Histograma
+    const t1QubitsResult = await pool.query(`
+      WITH ultimo_T1 AS (
+        SELECT 
+          mq.id_qubit, 
+          mq.valor as t1_valor,
+          ROW_NUMBER() OVER (PARTITION BY mq.id_qubit ORDER BY mq.data_hora_medicao DESC) as rn
+        FROM MedeQubit mq
+        JOIN Qubit q ON mq.id_qubit = q.id_qubit
+        WHERE q.id_qpu = $1::integer AND mq.nome_metrica = 'T1'
+      )
+      SELECT q.indice_qubit, ut.t1_valor
+      FROM Qubit q
+      JOIN ultimo_T1 ut ON q.id_qubit = ut.id_qubit
+      WHERE ut.rn = 1
+      ORDER BY q.indice_qubit;
+    `, [id_qpu]);
+
     res.json({ 
       mapa: mapaResult.rows, 
       metricas: cardsResult.rows, 
       fidelidades: fidResult.rows,
       historicoFidelidade: histFidResult.rows,
       historicoErro: histErroResult.rows,
-      experimentos: expResult.rows
+      experimentos: expResult.rows,
+      distribuicaoT1: t1QubitsResult.rows
     });
   } catch (err) { console.error(err.message); res.status(500).send('Erro no Dashboard'); }
 });

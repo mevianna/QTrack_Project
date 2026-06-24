@@ -163,7 +163,8 @@ function App() {
     fidelidades: [],
     historicoFidelidade: [],
     historicoErro: [],
-    experimentos: []
+    experimentos: [],
+    distribuicaoT1: []
   })
 
 
@@ -523,7 +524,7 @@ function App() {
             <div className="middle">
               <div className="panel"><h3>Mapa de Qubits</h3><Heatmap qubits={dadosDashQubits.mapa} /></div>
               <div className="panel"><h3>Fidelidade de Portas</h3><div style={{ height: '200px' }}><FidelityChart historico={dadosDashQubits.historicoFidelidade} /></div></div>
-              <div className="panel"><h3>Erro de Leitura</h3><div style={{ height: '200px' }}><ReadoutChart historico={dadosDashQubits.historicoErro} /></div></div>
+              <div className="panel"><h3>Distribuição de T1</h3><div style={{ height: '200px' }}><ReadoutChart distribuicao={dadosDashQubits.distribuicaoT1} /></div></div>
             </div>
 
             <div className="bottom">
@@ -1141,7 +1142,8 @@ function App() {
                         fidelidades: [], 
                         historicoFidelidade: [], 
                         historicoErro: [], 
-                        experimentos: [] 
+                        experimentos: [],
+                        distribuicaoT1: []
                       });
                     } catch (err) {
                       alert("Erro ao eliminar tabelas: " + err.message);

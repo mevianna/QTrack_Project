@@ -1,10 +1,20 @@
-export default function Heatmap() {
-  // Gerando 31 qubits e simulando os estados da sua imagem
-  const qubits = Array.from({ length: 31 }, (_, i) => {
-    if ([13, 27].includes(i)) return 'critical';
-    if ([5, 17, 24].includes(i)) return 'warning';
-    return 'healthy'; // Futuramente você pode mapear os inativos
-  });
+export default function Heatmap({ qubits = [] }) {
+  // Se não houver qubits reais, usa o mock padrão de fallback
+  const list = qubits && qubits.length > 0 
+    ? qubits.map(q => {
+        let status = 'healthy';
+        const st = q.status_operacional || q.status_qubit;
+        if (st === 'Instável' || st === 'Atenção' || st === 'warning') status = 'warning';
+        else if (st === 'Inoperante' || st === 'Crítico' || st === 'critical') status = 'critical';
+        else if (st === 'Inativo' || st === 'inactive') status = 'inactive';
+        return { index: q.indice_qubit, status };
+      })
+    : Array.from({ length: 31 }, (_, i) => {
+        let status = 'healthy';
+        if ([13, 27].includes(i)) status = 'critical';
+        else if ([5, 17, 24].includes(i)) status = 'warning';
+        return { index: i, status };
+      });
 
   const getStyle = (status) => {
     const colors = {
@@ -24,13 +34,13 @@ export default function Heatmap() {
   return (
     <div>
       <div className="heatmap" style={{ gap: '10px', padding: '10px 0' }}>
-        {qubits.map((status, index) => (
+        {list.map((item, index) => (
           <div
             key={index}
             className="cell"
-            style={getStyle(status)}
+            style={getStyle(item.status)}
           >
-            {index}
+            {item.index}
           </div>
         ))}
       </div>

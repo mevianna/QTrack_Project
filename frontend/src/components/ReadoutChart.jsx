@@ -1,17 +1,28 @@
-const data = [0.6, 0.8, 1.4, 1.0, 0.7, 0.9, 0.8, 0.5];
+export default function ReadoutChart({ historico = [] }) {
+  let data = [0.6, 0.8, 1.4, 1.0, 0.7, 0.9, 0.8, 0.5];
+  let labels = [
+    "01/05",
+    "02/05",
+    "03/05",
+    "04/05",
+    "05/05",
+    "06/05",
+    "07/05",
+    "08/05",
+  ];
 
-const labels = [
-  "01/05",
-  "02/05",
-  "03/05",
-  "04/05",
-  "05/05",
-  "06/05",
-  "07/05",
-  "08/05",
-];
+  if (historico && historico.length > 0) {
+    const dates = historico.map(item => item.data);
+    const values = historico.map(item => {
+      const rawVal = Number(item.media);
+      return rawVal <= 1 ? rawVal * 100 : rawVal;
+    });
+    if (dates.length >= 2) {
+      labels = dates;
+      data = values;
+    }
+  }
 
-export default function ReadoutChart() {
   const width = 500;
   const height = 220;
 

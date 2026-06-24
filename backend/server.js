@@ -8,11 +8,11 @@ app.use(cors());
 app.use(express.json());
 
 const pool = new Pool({
-  user: process.env.PGUSER || 'postgres',
-  host: process.env.PGHOST || 'localhost',
-  database: process.env.PGDATABASE || 'qtrack',
-  password: process.env.PGPASSWORD || '1234',
-  port: parseInt(process.env.PGPORT || '5432'),
+  user: 'postgres',
+  host: 'localhost',
+  database: 'qtrack',
+  password: '1234',
+  port: 5432,
 });
 
 // Auxiliar para popular selects de logs ambientais nas chaves estrangeiras
@@ -387,7 +387,62 @@ app.get('/api/dashboard/qubits/:id_qpu', async (req, res) => {
     const mapaResult = await pool.query(`SELECT id_qubit, indice_qubit, status_qubit, status_qubit as status_operacional FROM Qubit WHERE id_qpu = $1::integer ORDER BY indice_qubit;`, [id_qpu]);
     const cardsResult = await pool.query(`SELECT mq.nome_metrica, AVG(mq.valor) as media FROM MedeQubit mq JOIN Qubit q ON mq.id_qubit = q.id_qubit WHERE q.id_qpu = $1::integer AND mq.nome_metrica IN ('T1', 'TaxaErro') GROUP BY mq.nome_metrica;`, [id_qpu]);
     const fidResult = await pool.query(`SELECT pq.numero_qubits_alvo, AVG(mp.valor) as media FROM MedePorta mp JOIN PortaQuantica pq ON mp.id_porta = pq.id_porta JOIN Experimento e ON mp.id_experimento = e.id_experimento WHERE e.id_qpu = $1::integer AND mp.nome_metrica = 'Fidelidade' GROUP BY pq.numero_qubits_alvo;`, [id_qpu]);
-    res.json({ mapa: mapaResult.rows, metricas: cardsResult.rows, fidelidades: fidResult.rows });
+    
+    // Histórico de Fidelidades (1Q e 2Q) por dia
+    const histFidResult = await pool.query(`
+      SELECT 
+        TO_CHAR(mp.data_hora_medicao, 'DD/MM') as data,
+        pq.numero_qubits_alvo,
+        AVG(mp.valor) as media
+      FROM MedePorta mp
+      JOIN PortaQuantica pq ON mp.id_porta = pq.id_porta
+      JOIN Experimento e ON mp.id_experimento = e.id_experimento
+      WHERE e.id_qpu = $1::integer AND mp.nome_metrica = 'Fidelidade'
+      GROUP BY TO_CHAR(mp.data_hora_medicao, 'DD/MM'), DATE(mp.data_hora_medicao), pq.numero_qubits_alvo
+      ORDER BY DATE(mp.data_hora_medicao) ASC
+      LIMIT 16;
+    `, [id_qpu]);
+
+    // Histórico de Erros de Leitura por dia
+    const histErroResult = await pool.query(`
+      SELECT 
+        TO_CHAR(mq.data_hora_medicao, 'DD/MM') as data,
+        AVG(mq.valor) as media
+      FROM MedeQubit mq
+      JOIN Qubit q ON mq.id_qubit = q.id_qubit
+      WHERE q.id_qpu = $1::integer AND mq.nome_metrica = 'TaxaErro'
+      GROUP BY TO_CHAR(mq.data_hora_medicao, 'DD/MM'), DATE(mq.data_hora_medicao)
+      ORDER BY DATE(mq.data_hora_medicao) ASC
+      LIMIT 8;
+    `, [id_qpu]);
+
+    // Experimentos recentes da QPU com condições do ambiente associadas
+    const expResult = await pool.query(`
+      SELECT 
+        e.id_experimento, 
+        e.nome, 
+        e.status_execucao,
+        TO_CHAR(e.data_hora_inicio, 'DD/MM/YYYY HH24:MI') as data_inicio,
+        p.nome as pesquisador_nome,
+        ra.temperatura,
+        ra.pressao,
+        ra.vibracao
+      FROM Experimento e
+      LEFT JOIN pesquisador p ON e.id_pesquisador = p.id_pesquisador
+      LEFT JOIN RegistroAmbiente ra ON e.id_registro_ambiente = ra.id_registro_ambiente
+      WHERE e.id_qpu = $1::integer
+      ORDER BY e.data_hora_inicio DESC, e.id_experimento DESC
+      LIMIT 5;
+    `, [id_qpu]);
+
+    res.json({ 
+      mapa: mapaResult.rows, 
+      metricas: cardsResult.rows, 
+      fidelidades: fidResult.rows,
+      historicoFidelidade: histFidResult.rows,
+      historicoErro: histErroResult.rows,
+      experimentos: expResult.rows
+    });
   } catch (err) { console.error(err.message); res.status(500).send('Erro no Dashboard'); }
 });
 
@@ -756,6 +811,241 @@ Exemplos de Tradução (NLP-to-SQL):
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ================= REQUISITO 5/6: INICIALIZAR E RESETAR BANCO =================
+app.post('/api/db/init', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Criostato
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS criostato (
+        id_criostato SERIAL PRIMARY KEY,
+        nome VARCHAR(100) NOT NULL,
+        fabricante VARCHAR(100),
+        modelo VARCHAR(100),
+        temperatura_nominal DECIMAL(10,4),
+        status_operacional VARCHAR(50) DEFAULT 'Ativo'
+      );
+    `);
+
+    // 2. QPU
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS qpu (
+        id_qpu SERIAL PRIMARY KEY,
+        nome VARCHAR(100) NOT NULL,
+        fabricante VARCHAR(100),
+        modelo VARCHAR(100),
+        tecnologia VARCHAR(100),
+        data_instalacao DATE,
+        status_operacional VARCHAR(50) DEFAULT 'Ativo',
+        id_criostato INT REFERENCES criostato(id_criostato) ON DELETE SET NULL
+      );
+    `);
+
+    // 3. Qubit
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS qubit (
+        id_qubit SERIAL PRIMARY KEY,
+        indice_qubit INT NOT NULL,
+        tipo_qubit VARCHAR(100),
+        frequencia_ressonancia DECIMAL(10,4),
+        status_qubit VARCHAR(50) DEFAULT 'Saudável',
+        observacoes TEXT,
+        id_qpu INT NOT NULL REFERENCES qpu(id_qpu) ON DELETE CASCADE
+      );
+    `);
+
+    // 4. Pesquisador
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS pesquisador (
+        id_pesquisador SERIAL PRIMARY KEY,
+        nome VARCHAR(100) NOT NULL,
+        email VARCHAR(100) UNIQUE,
+        instituicao VARCHAR(150),
+        area_especializacao VARCHAR(150)
+      );
+    `);
+
+    // 5. RegistroAmbiente
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS registroambiente (
+        id_registro_ambiente SERIAL PRIMARY KEY,
+        data_hora_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        temperatura DECIMAL(10,4),
+        pressao DECIMAL(10,4),
+        vibracao DECIMAL(10,4)
+      );
+    `);
+
+    // 6. Experimento
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS experimento (
+        id_experimento SERIAL PRIMARY KEY,
+        nome VARCHAR(100) NOT NULL,
+        objetivo TEXT,
+        data_hora_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        data_hora_fim TIMESTAMP,
+        status_execucao VARCHAR(50) DEFAULT 'Planejado',
+        observacoes TEXT,
+        id_pesquisador INT REFERENCES pesquisador(id_pesquisador) ON DELETE SET NULL,
+        id_qpu INT REFERENCES qpu(id_qpu) ON DELETE CASCADE,
+        id_registro_ambiente INT REFERENCES registroambiente(id_registro_ambiente) ON DELETE SET NULL
+      );
+    `);
+
+    // 7. Calibracao
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS calibracao (
+        id_calibracao SERIAL PRIMARY KEY,
+        data_hora_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        data_hora_fim TIMESTAMP,
+        tipo_calibracao VARCHAR(100),
+        versao_parametros VARCHAR(50),
+        resultado TEXT,
+        observacoes TEXT,
+        id_pesquisador INT REFERENCES pesquisador(id_pesquisador) ON DELETE SET NULL,
+        id_qpu INT REFERENCES qpu(id_qpu) ON DELETE CASCADE,
+        id_registro_ambiente INT REFERENCES registroambiente(id_registro_ambiente) ON DELETE SET NULL
+      );
+    `);
+
+    // 8. MedeQubit
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS medequbit (
+        id_experimento INT REFERENCES experimento(id_experimento) ON DELETE CASCADE,
+        id_qubit INT REFERENCES qubit(id_qubit) ON DELETE CASCADE,
+        nome_metrica VARCHAR(50) NOT NULL,
+        valor DECIMAL(12,6),
+        unidade VARCHAR(20),
+        data_hora_medicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        metodo_obtencao VARCHAR(100),
+        observacoes TEXT,
+        PRIMARY KEY (id_experimento, id_qubit, nome_metrica)
+      );
+    `);
+
+    // 9. PortaQuantica
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS portaquantica (
+        id_porta SERIAL PRIMARY KEY,
+        nome_porta VARCHAR(50) NOT NULL,
+        numero_qubits_alvo INT DEFAULT 1,
+        descricao TEXT
+      );
+    `);
+
+    // 10. MedePorta
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS medeporta (
+        id_experimento INT REFERENCES experimento(id_experimento) ON DELETE CASCADE,
+        id_porta INT REFERENCES portaquantica(id_porta) ON DELETE CASCADE,
+        nome_metrica VARCHAR(50) NOT NULL,
+        valor DECIMAL(12,6),
+        unidade VARCHAR(20),
+        data_hora_medicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        metodo_obtencao VARCHAR(100),
+        observacoes TEXT,
+        PRIMARY KEY (id_experimento, id_porta, nome_metrica)
+      );
+    `);
+
+    // Carga de dados (inserindo apenas se as tabelas estiverem vazias para evitar duplicados)
+    const countQpus = await client.query('SELECT COUNT(*) FROM qpu;');
+    if (parseInt(countQpus.rows[0].count) === 0) {
+      // Criostatos
+      await client.query("INSERT INTO criostato (nome, fabricante, modelo, temperatura_nominal, status_operacional) VALUES ('Criostato Principal', 'Bluefors', 'LD250', 0.0100, 'Ativo'), ('Criostato de Testes', 'Oxford Instruments', 'Triton', 0.0150, 'Ativo');");
+      
+      // QPUs
+      await client.query("INSERT INTO qpu (nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato) VALUES ('QPU Triton-31', 'IBM', 'Quantum Eagle v3', 'Supercondutor', '2025-01-15', 'Ativo', 1), ('QPU Borealis-5', 'Xanadu', 'Photonic 5Q', 'Fotônica', '2025-05-10', 'Ativo', 2);");
+
+      // Qubits para Triton-31
+      for (let i = 0; i < 31; i++) {
+        let status = 'Saudável';
+        if ([13, 27].includes(i)) status = 'Crítico';
+        else if ([5, 17, 24].includes(i)) status = 'Atenção';
+        await client.query(`INSERT INTO qubit (indice_qubit, tipo_qubit, frequencia_ressonancia, status_qubit, observacoes, id_qpu) VALUES ($1, 'Transmon', $2, $3, 'Qubit padrão da grade supercondutora', 1);`, [i, 5.0 + i * 0.05, status]);
+      }
+      // Qubits para Borealis-5
+      for (let i = 0; i < 5; i++) {
+        await client.query(`INSERT INTO qubit (indice_qubit, tipo_qubit, frequencia_ressonancia, status_qubit, observacoes, id_qpu) VALUES ($1, 'Fóton polarizado', $2, 'Saudável', 'Qubit óptico', 2);`, [i, 193.1 + i * 0.1]);
+      }
+
+      // Pesquisadores
+      await client.query("INSERT INTO pesquisador (nome, email, instituicao, area_especializacao) VALUES ('Dr. Alice Smith', 'alice@ufsc.br', 'UFSC', 'Controle Quântico'), ('Bob Jones', 'bob@ufsc.br', 'UFSC', 'Mitigação de Erros');");
+
+      // Registros Ambientais
+      await client.query("INSERT INTO registroambiente (data_hora_registro, temperatura, pressao, vibracao) VALUES (NOW() - INTERVAL '4 days', 0.0110, 0.85, 0.04), (NOW() - INTERVAL '3 days', 0.0105, 0.82, 0.03), (NOW() - INTERVAL '2 days', 0.0120, 0.90, 0.06), (NOW() - INTERVAL '1 day', 0.0100, 0.80, 0.02), (NOW(), 0.0102, 0.81, 0.03);");
+
+      // Experimentos
+      await client.query("INSERT INTO experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) VALUES ('Fidelidade CNOT', 'Medir fidelidade de porta de dois qubits', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days' + INTERVAL '1 hour', 'Concluído', 'Fidelidade aceitável', 1, 1, 2), ('Tempo de Coerência T1', 'Caracterizar o tempo de decaimento longitudinal de todos os qubits', NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days' + INTERVAL '30 minutes', 'Concluído', 'Flutuações térmicas observadas', 2, 1, 3), ('Caracterização Óptica', 'Medir fontes de fótons únicos', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day' + INTERVAL '2 hours', 'Concluído', 'Taxa de coincidência excelente', 1, 2, 4), ('Simulação VQE', 'Rodar algoritmo VQE para molécula de H2', NOW(), NULL, 'Executando', 'Executando em background', 2, 1, 5);");
+
+      // Calibrações
+      await client.query("INSERT INTO calibracao (data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) VALUES (NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days' + INTERVAL '2 hours', 'Frequência de Qubit', 'v1.4.2', 'Frequências calibradas com erro < 100 kHz', 'Sucesso', 1, 1, 1), (NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days' + INTERVAL '1 hour', 'Pulso de Pi', 'v1.4.3', 'Amplitude ajustada para 12.3 mV', 'Sucesso', 2, 1, 3);");
+
+      // Porta Quantica
+      await client.query("INSERT INTO portaquantica (nome_porta, numero_qubits_alvo, descricao) VALUES ('Hadamard', 1, 'Cria superposição de estados'), ('Pauli-X', 1, 'Porta NOT quântica'), ('CNOT', 2, 'Porta lógica controlada-NOT');");
+
+      // MedeQubit (T1 e TaxaErro)
+      for (let day = 4; day >= 0; day--) {
+        for (let q = 1; q <= 31; q++) {
+          await client.query(`INSERT INTO medequbit (id_experimento, id_qubit, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES (2, $1, 'T1', $2, 'μs', NOW() - INTERVAL '${day} days', 'Decaimento Livre');`, [q, 60.0 + Math.sin(q + day) * 15.0]);
+          await client.query(`INSERT INTO medequbit (id_experimento, id_qubit, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES (2, $1, 'TaxaErro', $2, 'taxa', NOW() - INTERVAL '${day} days', 'Tomografia de Leitura');`, [q, 0.01 + Math.cos(q - day) * 0.005]);
+        }
+      }
+
+      // MedePorta (Fidelidade)
+      for (let day = 4; day >= 0; day--) {
+        await client.query(`INSERT INTO medeporta (id_experimento, id_porta, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES (1, 1, 'Fidelidade', $1, 'taxa', NOW() - INTERVAL '${day} days', 'Randomized Benchmarking');`, [0.992 + Math.sin(day) * 0.003]);
+        await client.query(`INSERT INTO medeporta (id_experimento, id_porta, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES (1, 3, 'Fidelidade', $1, 'taxa', NOW() - INTERVAL '${day} days', 'Interleaved RB');`, [0.975 + Math.cos(day) * 0.004]);
+      }
+    }
+
+    await client.query('COMMIT');
+    res.json({ message: "Tabelas criadas com sucesso e banco de dados populado com valores padrões!" });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).send("Erro ao inicializar e popular o banco de dados: " + err.message);
+  } finally {
+    client.release();
+  }
+});
+
+app.post('/api/db/drop', async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('DROP TABLE IF EXISTS medeporta CASCADE;');
+    await client.query('DROP TABLE IF EXISTS portaquantica CASCADE;');
+    await client.query('DROP TABLE IF EXISTS medequbit CASCADE;');
+    await client.query('DROP TABLE IF EXISTS calibracao CASCADE;');
+    await client.query('DROP TABLE IF EXISTS experimento CASCADE;');
+    await client.query('DROP TABLE IF EXISTS registroambiente CASCADE;');
+    await client.query('DROP TABLE IF EXISTS pesquisador CASCADE;');
+    await client.query('DROP TABLE IF EXISTS qubit CASCADE;');
+    await client.query('DROP TABLE IF EXISTS qpu CASCADE;');
+    await client.query('DROP TABLE IF EXISTS criostato CASCADE;');
+    
+    // Deleta sequências residuais
+    await client.query('DROP SEQUENCE IF EXISTS qpu_id_qpu_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS pesquisador_id_pesquisador_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS qubit_id_qubit_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS criostato_id_criostato_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS experimento_id_experimento_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS calibracao_id_calibracao_seq CASCADE;');
+
+    await client.query('COMMIT');
+    res.json({ message: "Todas as tabelas e sequências foram eliminadas com sucesso!" });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).send("Erro ao eliminar as tabelas: " + err.message);
+  } finally {
+    client.release();
   }
 });
 

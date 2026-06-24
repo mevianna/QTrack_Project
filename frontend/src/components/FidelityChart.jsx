@@ -1,18 +1,53 @@
-const data1Q = [99.3, 99.2, 99.4, 99.1, 99.2, 99.4, 99.2, 99.3];
-const data2Q = [97.8, 97.9, 97.8, 97.3, 97.7, 97.3, 97.6, 97.4];
+export default function FidelityChart({ historico = [] }) {
+  let data1Q = [99.3, 99.2, 99.4, 99.1, 99.2, 99.4, 99.2, 99.3];
+  let data2Q = [97.8, 97.9, 97.8, 97.3, 97.7, 97.3, 97.6, 97.4];
+  let labels = [
+    "01/05",
+    "02/05",
+    "03/05",
+    "04/05",
+    "05/05",
+    "06/05",
+    "07/05",
+    "08/05",
+  ];
 
-const labels = [
-  "01/05",
-  "02/05",
-  "03/05",
-  "04/05",
-  "05/05",
-  "06/05",
-  "07/05",
-  "08/05",
-];
+  if (historico && historico.length > 0) {
+    const dataMap = {};
+    historico.forEach(item => {
+      const d = item.data;
+      if (!dataMap[d]) {
+        dataMap[d] = { q1: null, q2: null };
+      }
+      const rawVal = Number(item.media);
+      const val = rawVal <= 1 ? rawVal * 100 : rawVal;
+      
+      if (item.numero_qubits_alvo === 1) {
+        dataMap[d].q1 = val;
+      } else if (item.numero_qubits_alvo === 2) {
+        dataMap[d].q2 = val;
+      }
+    });
 
-export default function FidelityChart() {
+    const dates = Object.keys(dataMap);
+    if (dates.length >= 2) {
+      labels = dates;
+      let lastQ1 = 99.0;
+      let lastQ2 = 97.0;
+      data1Q = [];
+      data2Q = [];
+      
+      dates.forEach(d => {
+        const val1 = dataMap[d].q1 !== null ? dataMap[d].q1 : lastQ1;
+        const val2 = dataMap[d].q2 !== null ? dataMap[d].q2 : lastQ2;
+        data1Q.push(val1);
+        data2Q.push(val2);
+        if (dataMap[d].q1 !== null) lastQ1 = dataMap[d].q1;
+        if (dataMap[d].q2 !== null) lastQ2 = dataMap[d].q2;
+      });
+    }
+  }
+
   const width = 500;
   const height = 220;
 

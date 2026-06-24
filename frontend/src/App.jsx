@@ -136,8 +136,15 @@ function App() {
 
   // ============== ESTADOS DO DASHBOARD DINÂMICO ==============
   const [qpuSelecionada, setQpuSelecionada] = useState('')
-  const [dadosDashQubits, setDadosDashQubits] = useState({ mapa: [], metricas: [], fidelidades: [] })
-  const [dadosDashAmbiente, setDadosDashAmbiente] = useState({ temperatura: 0, pressao: 0, vibracao: 0 })
+  const [dadosDashQubits, setDadosDashQubits] = useState({ 
+    mapa: [], 
+    metricas: [], 
+    fidelidades: [],
+    historicoFidelidade: [],
+    historicoErro: [],
+    experimentos: []
+  })
+
 
   // ================= LIMPEZA DE FORMULÁRIOS =================
   const limparFormulario = () => {
@@ -327,7 +334,6 @@ function App() {
   useEffect(() => {
     if (telaAtual === 'dashboard' && qpuSelecionada) {
       fetch(`http://localhost:8000/api/dashboard/qubits/${qpuSelecionada}`).then(res => res.json()).then(dados => setDadosDashQubits(dados));
-      fetch(`http://localhost:8000/api/dashboard/ambiente/${qpuSelecionada}`).then(res => res.json()).then(dados => setDadosDashAmbiente(dados));
     }
     if (telaAtual === 'relatorios') {
       fetch('http://localhost:8000/api/relatorios/t1').then(res => res.json()).then(dados => setDadosT1(dados));
@@ -386,25 +392,17 @@ function App() {
 
             <div className="middle">
               <div className="panel"><h3>Mapa de Qubits</h3><Heatmap qubits={dadosDashQubits.mapa} /></div>
-              <div className="panel"><h3>Fidelidade de Portas</h3><div style={{ height: '200px' }}><FidelityChart /></div></div>
-              <div className="panel"><h3>Erro de Leitura</h3><div style={{ height: '200px' }}><ReadoutChart /></div></div>
+              <div className="panel"><h3>Fidelidade de Portas</h3><div style={{ height: '200px' }}><FidelityChart historico={dadosDashQubits.historicoFidelidade} /></div></div>
+              <div className="panel"><h3>Erro de Leitura</h3><div style={{ height: '200px' }}><ReadoutChart historico={dadosDashQubits.historicoErro} /></div></div>
             </div>
 
             <div className="bottom">
-              <div className="panel" style={{ overflowX: 'auto' }}><h3 style={{ marginBottom: '15px' }}>Experimentos Recentes</h3><ExperimentTable /></div>
+              <div className="panel" style={{ overflowX: 'auto' }}><h3 style={{ marginBottom: '15px' }}>Experimentos Recentes</h3><ExperimentTable experimentos={dadosDashQubits.experimentos} /></div>
               <div className="panel">
                 <h3>Alertas Ativos</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '15px' }}>
                   <div style={{ padding: '12px', borderLeft: '3px solid #ef4444', background: 'rgba(239, 68, 68, 0.05)' }}><strong>Qubit 13</strong><p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Taxa de erro acima do limite</p></div>
                 </div>
-              </div>
-              <div className="panel">
-                <h3>Condições do Ambiente</h3>
-                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '15px', color: 'var(--text-muted)', marginTop: '15px' }}>
-                   <li style={{ display: 'flex', justifyContent: 'space-between' }}><span>Temperatura</span> <strong>{Number(dadosDashAmbiente.temperatura).toFixed(1)} K</strong></li>
-                   <li style={{ display: 'flex', justifyContent: 'space-between' }}><span>Pressão</span> <strong>{Number(dadosDashAmbiente.pressao).toFixed(2)} mTorr</strong></li>
-                   <li style={{ display: 'flex', justifyContent: 'space-between' }}><span>Vibração</span> <strong>{Number(dadosDashAmbiente.vibracao).toFixed(2)} μm/s</strong></li>
-                </ul>
               </div>
             </div>
           </>
@@ -873,6 +871,87 @@ function App() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {telaAtual === 'configuracoes' && (
+          <div style={{ padding: '20px', color: 'var(--text-main)', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+            <div>
+              <h1 style={{ color: 'var(--text-main)' }}>Configurações do Banco de Dados</h1>
+              <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
+                Gerenciamento estrutural do banco de dados (Requisito de Inicialização e Reset).
+              </p>
+            </div>
+
+            <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>
+              <div>
+                <h3 style={{ color: 'var(--text-main)' }}>🚀 Criar Tabelas e Carregar Dados</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '5px', marginBottom: '15px', lineHeight: '1.4' }}>
+                  Cria todas as 10 tabelas do banco de dados (Criostato, QPU, Qubit, Pesquisador, Experimento, etc.) e insere os dados iniciais pré-definidos (incluindo 31 qubits na QPU Triton-31, experimentos e medições de calibração).
+                </p>
+                <button 
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('http://localhost:8000/api/db/init', { method: 'POST' });
+                      const data = await res.json();
+                      alert(data.message);
+                      // Recarrega todos os dados nos estados locais
+                      fetch('http://localhost:8000/api/qpus').then(res => res.json()).then(dados => { setListaQpus(dados); if (dados.length > 0) setQpuSelecionada(dados[0].id_qpu); });
+                      fetch('http://localhost:8000/api/criostatos').then(res => res.json()).then(dados => setListaCriostatos(dados));
+                      fetch('http://localhost:8000/api/pesquisadores').then(res => res.json()).then(dados => setListaPesquisadores(dados));
+                      fetch('http://localhost:8000/api/qubits').then(res => res.json()).then(dados => setListaQubits(dados));
+                      fetch('http://localhost:8000/api/experimentos').then(res => res.json()).then(dados => setListaExperimentos(dados));
+                      fetch('http://localhost:8000/api/calibracoes').then(res => res.json()).then(dados => setListaCalibracoes(dados));
+                    } catch (err) {
+                      alert("Erro ao inicializar: " + err.message);
+                    }
+                  }}
+                  style={{ padding: '12px 24px', background: 'var(--accent-purple)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  Inicializar e Popular Banco
+                </button>
+              </div>
+
+              <hr style={{ borderColor: 'var(--border-color)', margin: '10px 0' }} />
+
+              <div>
+                <h3 style={{ color: '#ef4444' }}>⚠️ Eliminar Todas as Tabelas (Reset)</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '5px', marginBottom: '15px', lineHeight: '1.4' }}>
+                  Remove permanentemente todas as tabelas e dados do banco de dados (DROP TABLE CASCADE). Esta ação não pode ser desfeita!
+                </p>
+                <button 
+                  onClick={async () => {
+                    if (!window.confirm("ATENÇÃO: Você tem certeza que deseja APAGAR todas as tabelas do banco de dados? Isso apagará todos os dados definitivamente!")) return;
+                    try {
+                      const res = await fetch('http://localhost:8000/api/db/drop', { method: 'POST' });
+                      const data = await res.json();
+                      alert(data.message);
+                      // Zera os dados locais no state do react
+                      setListaQpus([]);
+                      setListaCriostatos([]);
+                      setListaPesquisadores([]);
+                      setListaQubits([]);
+                      setListaExperimentos([]);
+                      setListaCalibracoes([]);
+                      setQpuSelecionada('');
+                      setDadosDashQubits({ 
+                        mapa: [], 
+                        metricas: [], 
+                        fidelidades: [], 
+                        historicoFidelidade: [], 
+                        historicoErro: [], 
+                        experimentos: [] 
+                      });
+                    } catch (err) {
+                      alert("Erro ao eliminar tabelas: " + err.message);
+                    }
+                  }}
+                  style={{ padding: '12px 24px', background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  Eliminar Todas as Tabelas
+                </button>
+              </div>
             </div>
           </div>
         )}

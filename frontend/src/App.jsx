@@ -83,7 +83,7 @@ function App() {
   const [indiceQubit, setIndiceQubit] = useState('')
   const [tipoQubit, setTipoQubit] = useState('')
   const [frequenciaRessonancia, setFrequenciaRessonancia] = useState('')
-  const [statusQubit, setStatusQubit] = useState('Saudável')
+  const [statusQubit, setStatusQubit] = useState('Ativo')
   const [observacoesQubit, setObservacoesQubit] = useState('')
   const [idQpuQubit, setIdQpuQubit] = useState('')
   const [idQubitEditando, setIdQubitEditando] = useState(null)
@@ -156,7 +156,7 @@ function App() {
   }
   const limparFormQubit = () => {
     setIndiceQubit(''); setTipoQubit(''); setFrequenciaRessonancia('');
-    setStatusQubit('Saudável'); setObservacoesQubit(''); setIdQpuQubit(''); setIdQubitEditando(null);
+    setStatusQubit('Ativo'); setObservacoesQubit(''); setIdQpuQubit(''); setIdQubitEditando(null);
   }
   const limparFormCriostato = () => {
     setNomeCrio(''); setFabricanteCrio(''); setModeloCrio(''); setTempCrio(''); setStatusCrio('Ativo'); setIdCrioEditando(null);
@@ -700,7 +700,7 @@ function App() {
                   {listaQpus.map(p => <option key={p.id_qpu} value={p.id_qpu}>{p.nome}</option>)}
                 </select>
                 <select value={statusQubit} onChange={(e) => setStatusQubit(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 20%' }}>
-                  <option value="Saudável">Saudável</option><option value="Atenção">Atenção</option><option value="Crítico">Crítico</option><option value="Inativo">Inativo</option>
+                  <option value="Ativo">Ativo</option><option value="Atenção">Atenção</option><option value="Inativo">Inativo</option>
                 </select>
                 <input value={observacoesQubit} onChange={(e) => setObservacoesQubit(e.target.value)} type="text" placeholder="Observações" style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 70%' }} />
                 <button onClick={handleSalvarQubit} style={{ width: '100%', padding: '10px', background: idQubitEditando ? '#eab308' : 'var(--accent-purple)', color: idQubitEditando ? 'black' : 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}>{idQubitEditando ? 'Atualizar Qubit' : 'Salvar Qubit'}</button>
@@ -818,7 +818,7 @@ function App() {
                 <input value={inicioExp} onChange={(e) => setInicioExp(e.target.value)} type="datetime-local" style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }} />
                 <input value={fimExp} onChange={(e) => setFimExp(e.target.value)} type="datetime-local" style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }} />
                 <select value={statusExp} onChange={(e) => setStatusExp(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }}>
-                  <option value="Planejado">Planejado</option><option value="Em Execução">Em Execução</option><option value="Concluído">Concluído</option><option value="Falhou">Falhou</option>
+                  <option value="Planejado">Planejado</option><option value="Concluído">Concluído</option><option value="Falhou">Falhou</option>
                 </select>
                 <select value={idPesqExp} onChange={(e) => setIdPesqExp(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }}>
                   <option value="">Pesquisador Responsável</option>
@@ -872,7 +872,7 @@ function App() {
                 <input value={inicioCal} onChange={(e) => setInicioCal(e.target.value)} type="datetime-local" style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }} />
                 <input value={fimCal} onChange={(e) => setFimCal(e.target.value)} type="datetime-local" style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }} />
                 <select value={resultadoCal} onChange={(e) => setResultadoCal(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }}>
-                  <option value="Sucesso">Sucesso</option><option value="Otimização Parcial">Otimização Parcial</option><option value="Falha Crítica">Falha Crítica</option>
+                  <option value="Sucesso">Sucesso</option><option value="Falha">Falha</option>
                 </select>
                 <select value={idPesqCal} onChange={(e) => setIdPesqCal(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'white', flex: '1 1 30%' }}>
                   <option value="">Pesquisador Responsável</option>
@@ -1081,11 +1081,11 @@ function App() {
                     fontSize: '0.75rem',
                     fontWeight: 'bold',
                     background: detalhesDados.type === 'experimento'
-                      ? (detalhesDados.experimento.status_execucao === 'Concluído' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(59, 130, 246, 0.1)')
-                      : (detalhesDados.calibracao.resultado === 'Sucesso' ? 'rgba(34, 197, 94, 0.1)' : detalhesDados.calibracao.resultado === 'Falha Crítica' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)'),
+                      ? (detalhesDados.experimento.status_execucao === 'Concluído' ? 'rgba(34, 197, 94, 0.1)' : detalhesDados.experimento.status_execucao === 'Falhou' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)')
+                      : (detalhesDados.calibracao.resultado === 'Sucesso' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'),
                     color: detalhesDados.type === 'experimento'
-                      ? (detalhesDados.experimento.status_execucao === 'Concluído' ? '#22c55e' : '#3b82f6')
-                      : (detalhesDados.calibracao.resultado === 'Sucesso' ? '#22c55e' : detalhesDados.calibracao.resultado === 'Falha Crítica' ? '#ef4444' : '#f59e0b')
+                      ? (detalhesDados.experimento.status_execucao === 'Concluído' ? '#22c55e' : detalhesDados.experimento.status_execucao === 'Falhou' ? '#ef4444' : '#3b82f6')
+                      : (detalhesDados.calibracao.resultado === 'Sucesso' ? '#22c55e' : '#ef4444')
                   }}>
                     {detalhesDados.type === 'experimento' ? detalhesDados.experimento.status_execucao : detalhesDados.calibracao.resultado}
                   </span>

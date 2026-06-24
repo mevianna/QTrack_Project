@@ -588,7 +588,7 @@ function getMockResponse(message) {
   
   if (msg.includes('qpu') || msg.includes('hardware')) {
     return {
-      sql: "SELECT nome, fabricante, modelo, status_operacional FROM qpu WHERE status_operacional = 'Operacional';",
+      sql: "SELECT nome, fabricante, modelo, status_operacional FROM qpu WHERE status_operacional = 'Ativo';",
       template: (rows) => {
         if (!rows || rows.length === 0) return "Não encontrei nenhuma QPU ativa no momento no banco de dados.";
         let res = "Olá! Identifiquei as seguintes QPUs ativas no banco de dados (Modo Demonstrativo/Contingência):\n\n";
@@ -618,9 +618,9 @@ function getMockResponse(message) {
   
   if (msg.includes('qubit') && (msg.includes('instavel') || msg.includes('inoperante') || msg.includes('problema') || msg.includes('status'))) {
     return {
-      sql: "SELECT id_qubit, indice_qubit, status_qubit, id_qpu FROM qubit WHERE status_qubit IN ('Instável', 'Inoperante');",
+      sql: "SELECT id_qubit, indice_qubit, status_qubit, id_qpu FROM qubit WHERE status_qubit IN ('Atenção', 'Inativo');",
       template: (rows) => {
-        if (!rows || rows.length === 0) return "Excelente notícia! Todos os qubits cadastrados estão ativos e estáveis no banco de dados (Modo Demonstrativo/Contingência).";
+        if (!rows || rows.length === 0) return "Excelente notícia! Todos os qubits cadastrados estão ativos no banco de dados (Modo Demonstrativo/Contingência).";
         let res = "Atenção, identifiquei qubits com anomalias no banco de dados:\n\n";
         rows.forEach(r => {
           res += `* **Qubit #${r.indice_qubit}** (QPU #${r.id_qpu}) - Status: \`${r.status_qubit}\`\n`;
@@ -692,15 +692,15 @@ Sua principal função é atuar como um colega de laboratório (co-worker) para 
 Você tem acesso a um banco de dados PostgreSQL com as seguintes tabelas e estruturas exatas (use sempre nomes de tabelas e colunas em minúsculas nas queries):
 
 1. qpu (id_qpu, nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato)
-   - Valores típicos para status_operacional: 'Operacional', 'Inativo', 'Manutenção'
+   - Valores típicos para status_operacional: 'Ativo', 'Manutenção', 'Inativo'
 2. criostato (id_criostato, nome, fabricante, modelo, temperatura_nominal, status_operacional)
-   - Valores típicos para status_operacional: 'Operacional', 'Inativo'
+   - Valores típicos para status_operacional: 'Ativo', 'Manutenção', 'Inativo'
 3. qubit (id_qubit, indice_qubit, tipo_qubit, frequencia_ressonancia, status_qubit, observacoes, id_qpu)
-   - Valores típicos para status_qubit: 'Ativo', 'Instável', 'Inoperante'
+   - Valores típicos para status_qubit: 'Ativo', 'Atenção', 'Inativo'
 4. pesquisador (id_pesquisador, nome, email, instituicao, area_atuacao)
 5. experimento (id_experimento, nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
 6. calibracao (id_calibracao, data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
-   - Valores típicos para resultado: 'Sucesso', 'Parcial', 'Falha'
+   - Valores típicos para resultado: 'Sucesso', 'Falha'
 7. registroambiente (id_registro_ambiente, data_hora_registro, temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes)
 8. medequbit (id_experimento, id_qubit, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao, observacoes)
    - Valores típicos para nome_metrica: 'T1', 'T2', 'Fidelidade', 'TaxaErro'
@@ -957,7 +957,7 @@ app.post('/api/db/init', async (req, res) => {
         indice_qubit INT,
         tipo_qubit VARCHAR(255),
         frequencia_ressonancia DECIMAL(10,4),
-        status_qubit VARCHAR(255) DEFAULT 'Saudável',
+        status_qubit VARCHAR(255) DEFAULT 'Ativo',
         observacoes TEXT,
         id_qpu INT NOT NULL REFERENCES qpu(id_qpu) ON DELETE CASCADE
       );
@@ -1121,14 +1121,14 @@ app.post('/api/db/init', async (req, res) => {
 
       // Qubits para Triton-20
       for (let i = 0; i < 20; i++) {
-        let status = 'Saudável';
-        if (i === 13) status = 'Crítico';
+        let status = 'Ativo';
+        if (i === 13) status = 'Inativo';
         else if ([5, 17].includes(i)) status = 'Atenção';
         await client.query(`INSERT INTO qubit (indice_qubit, tipo_qubit, frequencia_ressonancia, status_qubit, observacoes, id_qpu) VALUES ($1, 'Transmon', $2, $3, 'Qubit padrão da grade supercondutora', 1);`, [i, 5.0 + i * 0.05, status]);
       }
       // Qubits para Borealis-20
       for (let i = 0; i < 20; i++) {
-        await client.query(`INSERT INTO qubit (indice_qubit, tipo_qubit, frequencia_ressonancia, status_qubit, observacoes, id_qpu) VALUES ($1, 'Fóton polarizado', $2, 'Saudável', 'Qubit óptico', 2);`, [i, 193.1 + i * 0.1]);
+        await client.query(`INSERT INTO qubit (indice_qubit, tipo_qubit, frequencia_ressonancia, status_qubit, observacoes, id_qpu) VALUES ($1, 'Fóton polarizado', $2, 'Ativo', 'Qubit óptico', 2);`, [i, 193.1 + i * 0.1]);
       }
 
       // Pesquisadores
@@ -1150,15 +1150,15 @@ app.post('/api/db/init', async (req, res) => {
       await client.query("INSERT INTO experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) VALUES ('Caracterização Óptica', 'Medir fontes de fótons únicos', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day' + INTERVAL '2 hours', 'Concluído', 'Taxa de coincidência excelente', 1, 2, 4);");
       
       // Experimento 8 (Simulação VQE)
-      await client.query("INSERT INTO experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) VALUES ('Simulação VQE', 'Rodar algoritmo VQE para molécula de H2', NOW(), NULL, 'Executando', 'Executando em background', 2, 1, 5);");
+      await client.query("INSERT INTO experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) VALUES ('Simulação VQE', 'Rodar algoritmo VQE para molécula de H2', NOW(), NULL, 'Planejado', 'Executando em background', 2, 1, 5);");
 
       // Calibrações
       await client.query(`
         INSERT INTO calibracao (data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) 
         VALUES 
         (NOW() - INTERVAL '4 days', NOW() - INTERVAL '4 days' + INTERVAL '2 hours', 'Frequência de Qubit', 'v1.4.2', 'Sucesso', 'Frequências calibradas com erro < 100 kHz', 1, 1, 1), 
-        (NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days' + INTERVAL '1 hour', 'Pulso de Pi', 'v1.4.3', 'Otimização Parcial', 'Amplitude ajustada para 12.3 mV', 2, 1, 3),
-        (NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day' + INTERVAL '30 minutes', 'Calibração de Leitura', 'v1.4.4', 'Falha Crítica', 'Ruído excessivo no amplificador criogênico HEMT', 1, 1, 4);
+        (NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days' + INTERVAL '1 hour', 'Pulso de Pi', 'v1.4.3', 'Sucesso', 'Amplitude ajustada para 12.3 mV', 2, 1, 3),
+        (NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day' + INTERVAL '30 minutes', 'Calibração de Leitura', 'v1.4.4', 'Falha', 'Ruído excessivo no amplificador criogênico HEMT', 1, 1, 4);
       `);
 
       // Porta Quantica

@@ -4,14 +4,13 @@ export default function Heatmap({ qubits = [] }) {
     ? qubits.map(q => {
         let status = 'healthy';
         const st = q.status_operacional || q.status_qubit;
-        if (st === 'Instável' || st === 'Atenção' || st === 'warning') status = 'warning';
-        else if (st === 'Inoperante' || st === 'Crítico' || st === 'critical') status = 'critical';
-        else if (st === 'Inativo' || st === 'inactive') status = 'inactive';
+        if (st === 'Atenção' || st === 'warning') status = 'warning';
+        else if (st === 'Inativo' || st === 'inactive' || st === 'Crítico' || st === 'critical') status = 'inactive';
         return { index: q.indice_qubit, status };
       })
     : Array.from({ length: 31 }, (_, i) => {
         let status = 'healthy';
-        if ([13, 27].includes(i)) status = 'critical';
+        if ([13, 27].includes(i)) status = 'inactive';
         else if ([5, 17, 24].includes(i)) status = 'warning';
         return { index: i, status };
       });
@@ -20,8 +19,7 @@ export default function Heatmap({ qubits = [] }) {
     const colors = {
       healthy: '#22c55e',
       warning: '#f59e0b',
-      critical: '#ef4444',
-      inactive: '#4b5563'
+      inactive: '#ef4444'
     };
     
     return {
@@ -55,16 +53,13 @@ export default function Heatmap({ qubits = [] }) {
         color: 'var(--text-muted)' 
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e' }}></div> Saudável
+          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#22c55e' }}></div> Ativo
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }}></div> Atenção
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444' }}></div> Crítico
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#4b5563' }}></div> Inativo
+          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444' }}></div> Inativo
         </div>
       </div>
     </div>

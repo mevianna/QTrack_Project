@@ -1333,10 +1333,6 @@ app.post('/api/db/init', async (req, res) => {
         const expId = expRows[1 + k].id_experimento;
         const qubits = qubitsByQpu[qpuId];
         
-        // Encontrar o dia da última calibração bem sucedida (o menor valor em calDays que é >= day)
-        const lastCalDay = calDays.find(d => d >= day) || 100;
-        const daysSinceCal = lastCalDay - day;
-        
         for (const q of qubits) {
           const qId = q.id_qubit;
           const idx = q.indice_qubit;
@@ -1349,13 +1345,13 @@ app.post('/api/db/init', async (req, res) => {
           // Degradação térmica
           const tempFactor = 1.0 / Math.pow(temp / 0.010, 1.2);
           
-          // Degradação progressiva desde a última calibração (decaimento de 1.8% ao dia, queda máxima de 30%)
-          const degradationFactor = Math.max(0.70, 1.0 - daysSinceCal * 0.018);
+          // Tendência geral de queda contínua ao longo dos 100 dias (de 1.0 até 0.70)
+          const ageFactor = 1.0 - (100 - day) * 0.003;
           
           // Pequena flutuação aleatória diária (TLS)
           const noiseT1 = (Math.random() - 0.5) * 1.5;
           
-          let t1Val = baseT1 * tempFactor * degradationFactor + noiseT1;
+          let t1Val = baseT1 * tempFactor * ageFactor + noiseT1;
           t1Val = Math.max(5.0, t1Val);
           
           // Modelo físico de taxa de erro de leitura
@@ -1365,10 +1361,10 @@ app.post('/api/db/init', async (req, res) => {
             
           const tempErrFactor = Math.pow(temp / 0.010, 2.5);
           
-          // A taxa de erro aumenta progressivamente à medida que se distancia da última calibração (2.5% ao dia)
-          const errorIncreaseFactor = 1.0 + daysSinceCal * 0.025;
+          // A taxa de erro aumenta lenta e progressivamente ao longo dos 100 dias (de 1.0 até 1.5)
+          const ageErrorFactor = 1.0 + (100 - day) * 0.005;
           
-          let errVal = baseErr * tempErrFactor * errorIncreaseFactor + (Math.random() - 0.5) * 0.0001;
+          let errVal = baseErr * tempErrFactor * ageErrorFactor + (Math.random() - 0.5) * 0.0001;
           errVal = Math.max(0.0001, Math.min(0.25, errVal));
           
           qubitValues.push(`(${expId}, ${qId}, 'T1', ${t1Val.toFixed(4)}, 'μs', NOW() - (${day} * INTERVAL '1 day'), 'Decaimento Livre')`);
@@ -1389,10 +1385,6 @@ app.post('/api/db/init', async (req, res) => {
         const { day, qpuId, temp } = dailyExpMap[k];
         const expId = expRows[1 + k].id_experimento;
         
-        // Encontrar o dia da última calibração bem sucedida
-        const lastCalDay = calDays.find(d => d >= day) || 100;
-        const daysSinceCal = lastCalDay - day;
-        
         for (const gate of gatesRows) {
           const isTwoQubit = (gate.numero_qubits_alvo === 2);
           
@@ -1411,13 +1403,13 @@ app.post('/api/db/init', async (req, res) => {
           const lossCoeff = isTwoQubit ? 0.003 : 0.0005;
           const tempLoss = lossCoeff * (Math.pow(temp / 0.010, 1.8) - 1.0);
           
-          // Degradação progressiva da fidelidade da porta conforme o tempo passa (0.008% ao dia para 1Q, 0.05% ao dia para 2Q)
-          const gateDegradation = daysSinceCal * (isTwoQubit ? 0.0005 : 0.00008);
+          // Degradação progressiva ao longo dos 100 dias (decaimento de 0.012% ao dia para 2Q, 0.0012% ao dia para 1Q)
+          const gateAgeLoss = (100 - day) * (isTwoQubit ? 0.00012 : 0.000012);
           
           // Ruído diário pequeno
           const noise = (Math.random() - 0.5) * 0.0002;
           
-          let fidelity = baseFidelity - tempLoss - gateDegradation + noise;
+          let fidelity = baseFidelity - tempLoss - gateAgeLoss + noise;
           fidelity = Math.max(0.75, Math.min(0.9999, fidelity));
           
           portaValues.push(`(${expId}, ${gate.id_porta}, 'Fidelidade', ${fidelity.toFixed(6)}, 'taxa', NOW() - (${day} * INTERVAL '1 day'), 'Randomized Benchmarking')`);

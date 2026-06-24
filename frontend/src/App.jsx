@@ -527,14 +527,8 @@ function App() {
               <div className="panel"><h3>Distribuição de T1</h3><div style={{ height: '200px' }}><ReadoutChart distribuicao={dadosDashQubits.distribuicaoT1} /></div></div>
             </div>
 
-            <div className="bottom">
+            <div className="bottom" style={{ gridTemplateColumns: '1fr' }}>
               <div className="panel" style={{ overflowX: 'auto' }}><h3 style={{ marginBottom: '15px' }}>Experimentos Recentes</h3><ExperimentTable experimentos={dadosDashQubits.experimentos} onVerDetalhes={handleVerDetalhesExperimento} /></div>
-              <div className="panel">
-                <h3>Alertas Ativos</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '15px' }}>
-                  <div style={{ padding: '12px', borderLeft: '3px solid #ef4444', background: 'rgba(239, 68, 68, 0.05)' }}><strong>Qubit 13</strong><p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Taxa de erro acima do limite</p></div>
-                </div>
-              </div>
             </div>
           </>
         )}

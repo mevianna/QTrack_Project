@@ -1203,11 +1203,10 @@ app.post('/api/db/init', async (req, res) => {
       // Gerar registros ambientais para os últimos 105 dias
       const ambValues = [];
       for (let day = 105; day >= 0; day--) {
-        // Temperatura base em torno de 10 mK (0.0100 Kelvin).
-        // Introduzimos oscilações periódicas e picos térmicos em dias específicos
-        let temp = 0.010 + (Math.sin(day / 5.0) * 0.001) + Math.random() * 0.001;
+        // Temperatura base muito estável em torno de 10 mK (0.0100 Kelvin)
+        let temp = 0.0100 + (Math.random() - 0.5) * 0.0002;
         
-        // Picos de calor (desafios ambientais)
+        // Picos de calor (desafios ambientais isolados)
         if (day === 70 || day === 71) {
           temp = 0.038 + Math.random() * 0.005; // Spike térmico de ~40mK (catastrófico)
         } else if (day === 30) {

@@ -1165,6 +1165,44 @@ function App() {
               </div>
             )}
 
+            {/* Qubits Calibrados (Abrange) - APENAS para Calibrações */}
+            {detalhesDados.type === 'calibracao' && (
+              <>
+                <h3 style={{ fontSize: '1.05rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px', marginBottom: '12px', color: 'var(--accent-purple)' }}>
+                  Qubits Calibrados (Relação Abrange)
+                </h3>
+                {detalhesDados.qubitsCalibrados && detalhesDados.qubitsCalibrados.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '25px' }}>
+                    {detalhesDados.qubitsCalibrados.map(qc => (
+                      <div key={qc.id_qubit} style={{ backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '12px 15px', borderRadius: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 'bold', color: 'var(--accent-purple)' }}>Qubit #{qc.indice_qubit} ({qc.tipo_qubit})</span>
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#cbd5e1', marginTop: '6px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                          <div>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'block' }}>Parâmetro Ajustado</span>
+                            <span style={{ fontWeight: 'bold' }}>{qc.parametro_ajustado || 'N/A'}</span>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'block' }}>Valor Antes</span>
+                            <span style={{ color: '#ef4444', fontWeight: 'bold' }}>{qc.valor_antes !== null ? Number(qc.valor_antes).toFixed(4) : '---'}</span>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'block' }}>Valor Depois</span>
+                            <span style={{ color: '#22c55e', fontWeight: 'bold' }}>{qc.valor_depois !== null ? Number(qc.valor_depois).toFixed(4) : '---'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem', marginBottom: '25px', backgroundColor: 'rgba(255,255,255,0.01)', padding: '12px', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.08)' }}>
+                    Nenhum qubit associado a esta calibração no registro abrange.
+                  </div>
+                )}
+              </>
+            )}
+
             {/* Pulse Sequences */}
             <h3 style={{ fontSize: '1.05rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px', marginBottom: '12px', color: 'var(--accent-purple)' }}>
               Sequências de Pulso Utilizadas

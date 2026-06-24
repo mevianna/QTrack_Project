@@ -396,10 +396,19 @@ app.get('/api/calibracoes/:id/detalhes', async (req, res) => {
       WHERE uc.id_calibracao = $1;
     `;
     const seqResult = await pool.query(seqQuery, [id]);
+
+    const abrangeQuery = `
+      SELECT a.*, q.indice_qubit, q.tipo_qubit
+      FROM abrange a
+      JOIN qubit q ON a.id_qubit = q.id_qubit
+      WHERE a.id_calibracao = $1;
+    `;
+    const abrangeResult = await pool.query(abrangeQuery, [id]);
     
     res.json({
       calibracao,
-      sequencias: seqResult.rows
+      sequencias: seqResult.rows,
+      qubitsCalibrados: abrangeResult.rows
     });
   } catch (err) {
     console.error(err.message); res.status(500).send('Erro ao buscar detalhes da calibração');

@@ -18,7 +18,7 @@ const pool = new Pool({
 // Auxiliar para popular selects de logs ambientais nas chaves estrangeiras
 app.get('/api/registro-ambiente', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id_registro_ambiente, data_hora_registro, temperatura FROM registroambiente ORDER BY data_hora_registro DESC;');
+    const result = await pool.query('SELECT id_registro_ambiente, data_hora_registro, temperatura FROM RegistroAmbiente ORDER BY data_hora_registro DESC;');
     res.json(result.rows);
   } catch (err) {
     console.error(err.message); res.status(500).send('Erro ao buscar Registros de Ambiente');
@@ -29,7 +29,7 @@ app.post('/api/registro-ambiente', async (req, res) => {
   const { temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO registroambiente (temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;',
+      'INSERT INTO RegistroAmbiente (temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;',
       [temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes]
     );
     res.status(201).json(result.rows[0]);
@@ -40,7 +40,7 @@ app.post('/api/registro-ambiente', async (req, res) => {
 
 app.get('/api/sequencias-pulso', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id_sequencia, nome, finalidade, versao, descricao FROM sequenciapulso ORDER BY id_sequencia;');
+    const result = await pool.query('SELECT id_sequencia, nome, finalidade, versao, descricao FROM SequenciaPulso ORDER BY id_sequencia;');
     res.json(result.rows);
   } catch (err) {
     console.error(err.message); res.status(500).send('Erro ao buscar Sequências de Pulso');
@@ -50,7 +50,7 @@ app.get('/api/sequencias-pulso', async (req, res) => {
 // ================= 1. CRUD DE QPUs =================
 app.get('/api/qpus', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id_qpu, nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato FROM QPU ORDER BY id_qpu;');
+    const result = await pool.query('SELECT id_qpu, nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato FROM Qpu ORDER BY id_qpu;');
     res.json(result.rows);
   } catch (err) {
     console.error(err.message); res.status(500).send('Erro ao buscar QPUs');
@@ -61,7 +61,7 @@ app.post('/api/qpus', async (req, res) => {
   try {
     const { nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato } = req.body;
     const result = await pool.query(
-      'INSERT INTO QPU (nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;',
+      'INSERT INTO Qpu (nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;',
       [nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato]
     );
     res.json(result.rows[0]);
@@ -75,7 +75,7 @@ app.put('/api/qpus/:id', async (req, res) => {
     const { id } = req.params;
     const { nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato } = req.body;
     const result = await pool.query(
-      'UPDATE QPU SET nome=$1, fabricante=$2, modelo=$3, tecnologia=$4, data_instalacao=$5, status_operacional=$6, id_criostato=$7 WHERE id_qpu=$8 RETURNING *;',
+      'UPDATE Qpu SET nome=$1, fabricante=$2, modelo=$3, tecnologia=$4, data_instalacao=$5, status_operacional=$6, id_criostato=$7 WHERE id_qpu=$8 RETURNING *;',
       [nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato, id]
     );
     res.json(result.rows[0]);
@@ -87,7 +87,7 @@ app.put('/api/qpus/:id', async (req, res) => {
 app.delete('/api/qpus/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM QPU WHERE id_qpu = $1;', [id]);
+    await pool.query('DELETE FROM Qpu WHERE id_qpu = $1;', [id]);
     res.json({ message: "QPU excluída" });
   } catch (err) {
     console.error(err.message); res.status(500).send('Erro ao excluir QPU');
@@ -97,7 +97,7 @@ app.delete('/api/qpus/:id', async (req, res) => {
 // ================= 2. CRUD DE CRIOSTATOS =================
 app.get('/api/criostatos', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id_criostato, nome, fabricante, modelo, temperatura_nominal, status_operacional FROM criostato ORDER BY id_criostato;');
+    const result = await pool.query('SELECT id_criostato, nome, fabricante, modelo, temperatura_nominal, status_operacional FROM Criostato ORDER BY id_criostato;');
     res.json(result.rows);
   } catch (err) {
     console.error(err.message); res.status(500).send('Erro ao buscar Criostatos');
@@ -108,7 +108,7 @@ app.post('/api/criostatos', async (req, res) => {
   try {
     const { nome, fabricante, modelo, temperatura_nominal, status_operacional } = req.body;
     const result = await pool.query(
-      'INSERT INTO criostato (nome, fabricante, modelo, temperatura_nominal, status_operacional) VALUES ($1, $2, $3, $4, $5) RETURNING *;',
+      'INSERT INTO Criostato (nome, fabricante, modelo, temperatura_nominal, status_operacional) VALUES ($1, $2, $3, $4, $5) RETURNING *;',
       [nome, fabricante, modelo, temperatura_nominal, status_operacional]
     );
     res.json(result.rows[0]);
@@ -122,7 +122,7 @@ app.put('/api/criostatos/:id', async (req, res) => {
     const { id } = req.params;
     const { nome, fabricante, modelo, temperatura_nominal, status_operacional } = req.body;
     const result = await pool.query(
-      'UPDATE criostato SET nome=$1, fabricante=$2, modelo=$3, temperatura_nominal=$4, status_operacional=$5 WHERE id_criostato=$6 RETURNING *;',
+      'UPDATE Criostato SET nome=$1, fabricante=$2, modelo=$3, temperatura_nominal=$4, status_operacional=$5 WHERE id_criostato=$6 RETURNING *;',
       [nome, fabricante, modelo, temperatura_nominal, status_operacional, id]
     );
     res.json(result.rows[0]);
@@ -134,7 +134,7 @@ app.put('/api/criostatos/:id', async (req, res) => {
 app.delete('/api/criostatos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM criostato WHERE id_criostato = $1;', [id]);
+    await pool.query('DELETE FROM Criostato WHERE id_criostato = $1;', [id]);
     res.json({ message: "Criostato excluído" });
   } catch (err) {
     console.error(err.message); res.status(500).send('Erro ao excluir Criostato');
@@ -144,7 +144,7 @@ app.delete('/api/criostatos/:id', async (req, res) => {
 // ================= 3. CRUD DE PESQUISADORES =================
 app.get('/api/pesquisadores', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id_pesquisador, nome, email, instituicao, area_atuacao FROM pesquisador ORDER BY id_pesquisador;');
+    const result = await pool.query('SELECT id_pesquisador, nome, email, instituicao, area_atuacao FROM Pesquisador ORDER BY id_pesquisador;');
     res.json(result.rows);
   } catch (err) {
     console.error(err.message); res.status(500).send('Erro ao buscar Pesquisadores');
@@ -155,7 +155,7 @@ app.post('/api/pesquisadores', async (req, res) => {
   try {
     const { nome, email, instituicao, area_atuacao } = req.body;
     const result = await pool.query(
-      'INSERT INTO pesquisador (nome, email, instituicao, area_atuacao) VALUES ($1, $2, $3, $4) RETURNING *;',
+      'INSERT INTO Pesquisador (nome, email, instituicao, area_atuacao) VALUES ($1, $2, $3, $4) RETURNING *;',
       [nome, email, instituicao, area_atuacao]
     );
     res.json(result.rows[0]);
@@ -169,7 +169,7 @@ app.put('/api/pesquisadores/:id', async (req, res) => {
     const { id } = req.params;
     const { nome, email, instituicao, area_atuacao } = req.body;
     const result = await pool.query(
-      'UPDATE pesquisador SET nome=$1, email=$2, instituicao=$3, area_atuacao=$4 WHERE id_pesquisador=$5 RETURNING *;',
+      'UPDATE Pesquisador SET nome=$1, email=$2, instituicao=$3, area_atuacao=$4 WHERE id_pesquisador=$5 RETURNING *;',
       [nome, email, instituicao, area_atuacao, id]
     );
     res.json(result.rows[0]);
@@ -181,7 +181,7 @@ app.put('/api/pesquisadores/:id', async (req, res) => {
 app.delete('/api/pesquisadores/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM pesquisador WHERE id_pesquisador = $1;', [id]);
+    await pool.query('DELETE FROM Pesquisador WHERE id_pesquisador = $1;', [id]);
     res.json({ message: "Pesquisador excluído" });
   } catch (err) {
     console.error(err.message); res.status(500).send('Erro ao excluir Pesquisador');
@@ -194,7 +194,7 @@ app.get('/api/qubits', async (req, res) => {
     const query = `
       SELECT q.id_qubit, q.indice_qubit, q.tipo_qubit, q.frequencia_ressonancia, q.status_qubit, q.observacoes, q.id_qpu, p.nome as qpu_nome
       FROM Qubit q
-      JOIN QPU p ON q.id_qpu = p.id_qpu
+      JOIN Qpu p ON q.id_qpu = p.id_qpu
       ORDER BY q.id_qpu ASC, q.indice_qubit ASC;
     `;
     const result = await pool.query(query);
@@ -249,10 +249,10 @@ app.get('/api/experimentos', async (req, res) => {
   try {
     const query = `
       SELECT e.*, p.nome as pesquisador_nome, q.nome as qpu_nome,
-             (SELECT id_sequencia FROM utilizaexperimento WHERE id_experimento = e.id_experimento LIMIT 1) as id_sequencia
-      FROM experimento e
-      LEFT JOIN pesquisador p ON e.id_pesquisador = p.id_pesquisador
-      LEFT JOIN QPU q ON e.id_qpu = q.id_qpu
+             (SELECT id_sequencia FROM SequenciaPulso_Experimento WHERE id_experimento = e.id_experimento LIMIT 1) as id_sequencia
+      FROM Experimento e
+      LEFT JOIN Pesquisador p ON e.id_pesquisador = p.id_pesquisador
+      LEFT JOIN Qpu q ON e.id_qpu = q.id_qpu
       ORDER BY e.data_hora_inicio DESC;
     `;
     const result = await pool.query(query);
@@ -268,13 +268,13 @@ app.post('/api/experimentos', async (req, res) => {
     const { nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id_sequencia } = req.body;
     await client.query('BEGIN');
     const query = `
-      INSERT INTO experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
+      INSERT INTO Experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *;
     `;
     const result = await client.query(query, [nome, objetivo, data_hora_inicio || null, data_hora_fim || null, status_execucao, observacoes, id_pesquisador || null, id_qpu || null, id_registro_ambiente || null]);
     const exp = result.rows[0];
     if (id_sequencia) {
-      await client.query('INSERT INTO utilizaexperimento (id_experimento, id_sequencia) VALUES ($1, $2);', [exp.id_experimento, id_sequencia]);
+      await client.query('INSERT INTO SequenciaPulso_Experimento (id_experimento, id_sequencia) VALUES ($1, $2);', [exp.id_experimento, id_sequencia]);
     }
     await client.query('COMMIT');
     res.json(exp);
@@ -293,15 +293,15 @@ app.put('/api/experimentos/:id', async (req, res) => {
     const { nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id_sequencia } = req.body;
     await client.query('BEGIN');
     const query = `
-      UPDATE experimento 
+      UPDATE Experimento 
       SET nome=$1, objetivo=$2, data_hora_inicio=$3, data_hora_fim=$4, status_execucao=$5, observacoes=$6, id_pesquisador=$7, id_qpu=$8, id_registro_ambiente=$9
       WHERE id_experimento=$10 RETURNING *;
     `;
     const result = await client.query(query, [nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id]);
     const exp = result.rows[0];
-    await client.query('DELETE FROM utilizaexperimento WHERE id_experimento = $1;', [id]);
+    await client.query('DELETE FROM SequenciaPulso_Experimento WHERE id_experimento = $1;', [id]);
     if (id_sequencia) {
-      await client.query('INSERT INTO utilizaexperimento (id_experimento, id_sequencia) VALUES ($1, $2);', [id, id_sequencia]);
+      await client.query('INSERT INTO SequenciaPulso_Experimento (id_experimento, id_sequencia) VALUES ($1, $2);', [id, id_sequencia]);
     }
     await client.query('COMMIT');
     res.json(exp);
@@ -316,7 +316,7 @@ app.put('/api/experimentos/:id', async (req, res) => {
 app.delete('/api/experimentos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM experimento WHERE id_experimento = $1;', [id]);
+    await pool.query('DELETE FROM Experimento WHERE id_experimento = $1;', [id]);
     res.json({ message: "Experimento excluído" });
   } catch (err) {
     console.error(err.message); res.status(500).send('Erro ao excluir Experimento');
@@ -329,10 +329,10 @@ app.get('/api/experimentos/:id/detalhes', async (req, res) => {
     const expQuery = `
       SELECT e.*, p.nome as pesquisador_nome, q.nome as qpu_nome,
              ra.temperatura, ra.pressao, ra.umidade, ra.vibracao, ra.campo_magnetico, ra.observacoes as ambiente_observacoes
-      FROM experimento e
-      LEFT JOIN pesquisador p ON e.id_pesquisador = p.id_pesquisador
-      LEFT JOIN QPU q ON e.id_qpu = q.id_qpu
-      LEFT JOIN registroambiente ra ON e.id_registro_ambiente = ra.id_registro_ambiente
+      FROM Experimento e
+      LEFT JOIN Pesquisador p ON e.id_pesquisador = p.id_pesquisador
+      LEFT JOIN Qpu q ON e.id_qpu = q.id_qpu
+      LEFT JOIN RegistroAmbiente ra ON e.id_registro_ambiente = ra.id_registro_ambiente
       WHERE e.id_experimento = $1;
     `;
     const expResult = await pool.query(expQuery, [id]);
@@ -343,8 +343,8 @@ app.get('/api/experimentos/:id/detalhes', async (req, res) => {
 
     const seqQuery = `
       SELECT sp.*
-      FROM sequenciapulso sp
-      JOIN utilizaexperimento ue ON sp.id_sequencia = ue.id_sequencia
+      FROM SequenciaPulso sp
+      JOIN SequenciaPulso_Experimento ue ON sp.id_sequencia = ue.id_sequencia
       WHERE ue.id_experimento = $1;
     `;
     const seqResult = await pool.query(seqQuery, [id]);
@@ -363,10 +363,10 @@ app.get('/api/calibracoes', async (req, res) => {
   try {
     const query = `
       SELECT c.*, p.nome as pesquisador_nome, q.nome as qpu_nome,
-             (SELECT id_sequencia FROM utilizacalibracao WHERE id_calibracao = c.id_calibracao LIMIT 1) as id_sequencia
-      FROM calibracao c
-      LEFT JOIN pesquisador p ON c.id_pesquisador = p.id_pesquisador
-      LEFT JOIN QPU q ON c.id_qpu = q.id_qpu
+             (SELECT id_sequencia FROM SequenciaPulso_Calibracao WHERE id_calibracao = c.id_calibracao LIMIT 1) as id_sequencia
+      FROM Calibracao c
+      LEFT JOIN Pesquisador p ON c.id_pesquisador = p.id_pesquisador
+      LEFT JOIN Qpu q ON c.id_qpu = q.id_qpu
       ORDER BY c.data_hora_inicio DESC;
     `;
     const result = await pool.query(query);
@@ -382,13 +382,13 @@ app.post('/api/calibracoes', async (req, res) => {
     const { data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id_sequencia } = req.body;
     await client.query('BEGIN');
     const query = `
-      INSERT INTO calibracao (data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
+      INSERT INTO Calibracao (data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *;
     `;
     const result = await client.query(query, [data_hora_inicio || null, data_hora_fim || null, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador || null, id_qpu || null, id_registro_ambiente || null]);
     const cal = result.rows[0];
     if (id_sequencia) {
-      await client.query('INSERT INTO utilizacalibracao (id_calibracao, id_sequencia) VALUES ($1, $2);', [cal.id_calibracao, id_sequencia]);
+      await client.query('INSERT INTO SequenciaPulso_Calibracao (id_calibracao, id_sequencia) VALUES ($1, $2);', [cal.id_calibracao, id_sequencia]);
     }
     await client.query('COMMIT');
     res.json(cal);
@@ -407,15 +407,15 @@ app.put('/api/calibracoes/:id', async (req, res) => {
     const { data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id_sequencia } = req.body;
     await client.query('BEGIN');
     const query = `
-      UPDATE calibracao 
+      UPDATE Calibracao 
       SET data_hora_inicio=$1, data_hora_fim=$2, tipo_calibracao=$3, versao_parametros=$4, resultado=$5, observacoes=$6, id_pesquisador=$7, id_qpu=$8, id_registro_ambiente=$9
       WHERE id_calibracao=$10 RETURNING *;
     `;
     const result = await client.query(query, [data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente, id]);
     const cal = result.rows[0];
-    await client.query('DELETE FROM utilizacalibracao WHERE id_calibracao = $1;', [id]);
+    await client.query('DELETE FROM SequenciaPulso_Calibracao WHERE id_calibracao = $1;', [id]);
     if (id_sequencia) {
-      await client.query('INSERT INTO utilizacalibracao (id_calibracao, id_sequencia) VALUES ($1, $2);', [id, id_sequencia]);
+      await client.query('INSERT INTO SequenciaPulso_Calibracao (id_calibracao, id_sequencia) VALUES ($1, $2);', [id, id_sequencia]);
     }
     await client.query('COMMIT');
     res.json(cal);
@@ -430,7 +430,7 @@ app.put('/api/calibracoes/:id', async (req, res) => {
 app.delete('/api/calibracoes/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    await pool.query('DELETE FROM calibracao WHERE id_calibracao = $1;', [id]);
+    await pool.query('DELETE FROM Calibracao WHERE id_calibracao = $1;', [id]);
     res.json({ message: "Calibração excluída" });
   } catch (err) {
     console.error(err.message); res.status(500).send('Erro ao excluir Calibração');
@@ -443,10 +443,10 @@ app.get('/api/calibracoes/:id/detalhes', async (req, res) => {
     const calQuery = `
       SELECT c.*, p.nome as pesquisador_nome, q.nome as qpu_nome,
              ra.temperatura, ra.pressao, ra.umidade, ra.vibracao, ra.campo_magnetico, ra.observacoes as ambiente_observacoes
-      FROM calibracao c
-      LEFT JOIN pesquisador p ON c.id_pesquisador = p.id_pesquisador
-      LEFT JOIN QPU q ON c.id_qpu = q.id_qpu
-      LEFT JOIN registroambiente ra ON c.id_registro_ambiente = ra.id_registro_ambiente
+      FROM Calibracao c
+      LEFT JOIN Pesquisador p ON c.id_pesquisador = p.id_pesquisador
+      LEFT JOIN Qpu q ON c.id_qpu = q.id_qpu
+      LEFT JOIN RegistroAmbiente ra ON c.id_registro_ambiente = ra.id_registro_ambiente
       WHERE c.id_calibracao = $1;
     `;
     const calResult = await pool.query(calQuery, [id]);
@@ -457,16 +457,16 @@ app.get('/api/calibracoes/:id/detalhes', async (req, res) => {
 
     const seqQuery = `
       SELECT sp.*
-      FROM sequenciapulso sp
-      JOIN utilizacalibracao uc ON sp.id_sequencia = uc.id_sequencia
+      FROM SequenciaPulso sp
+      JOIN SequenciaPulso_Calibracao uc ON sp.id_sequencia = uc.id_sequencia
       WHERE uc.id_calibracao = $1;
     `;
     const seqResult = await pool.query(seqQuery, [id]);
 
     const abrangeQuery = `
       SELECT a.*, q.indice_qubit, q.tipo_qubit
-      FROM abrange a
-      JOIN qubit q ON a.id_qubit = q.id_qubit
+      FROM Calibracao_Qubit a
+      JOIN Qubit q ON a.id_qubit = q.id_qubit
       WHERE a.id_calibracao = $1;
     `;
     const abrangeResult = await pool.query(abrangeQuery, [id]);
@@ -487,13 +487,13 @@ app.get('/api/relatorios/t1', async (req, res) => {
     const query = `
       WITH diario_qpu AS (
         SELECT p.id_qpu, p.nome as qpu_nome, DATE(mq.data_hora_medicao) as data, AVG(mq.valor) as media_t1
-        FROM MedeQubit mq JOIN Qubit q ON mq.id_qubit = q.id_qubit JOIN QPU p ON q.id_qpu = p.id_qpu
+        FROM Experimento_Qubit mq JOIN Qubit q ON mq.id_qubit = q.id_qubit JOIN Qpu p ON q.id_qpu = p.id_qpu
         WHERE mq.nome_metrica = 'T1' GROUP BY p.id_qpu, p.nome, DATE(mq.data_hora_medicao)
       ),
       ranqueamento_piores AS (
         SELECT q.id_qpu, DATE(mq.data_hora_medicao) as data, mq.id_qubit as pior_qubit_id, mq.valor as pior_valor_t1,
         ROW_NUMBER() OVER(PARTITION BY q.id_qpu, DATE(mq.data_hora_medicao) ORDER BY mq.valor ASC) as rn
-        FROM MedeQubit mq JOIN Qubit q ON mq.id_qubit = q.id_qubit WHERE mq.nome_metrica = 'T1'
+        FROM Experimento_Qubit mq JOIN Qubit q ON mq.id_qubit = q.id_qubit WHERE mq.nome_metrica = 'T1'
       )
       SELECT d.qpu_nome, d.data, d.media_t1, r.pior_qubit_id, r.pior_valor_t1
       FROM diario_qpu d LEFT JOIN ranqueamento_piores r ON d.id_qpu = r.id_qpu AND d.data = r.data AND r.rn = 1
@@ -507,7 +507,7 @@ app.get('/api/relatorios/fidelidade', async (req, res) => {
   try {
     const query = `
       SELECT pq.nome_porta, pq.numero_qubits_alvo || ' Qubit(s)' as categoria, AVG(mp.valor) as fidelidade_media
-      FROM MedePorta mp JOIN PortaQuantica pq ON mp.id_porta = pq.id_porta JOIN Experimento e ON mp.id_experimento = e.id_experimento
+      FROM Experimento_Porta mp JOIN PortaQuantica pq ON mp.id_porta = pq.id_porta JOIN Experimento e ON mp.id_experimento = e.id_experimento
       WHERE mp.nome_metrica = 'Fidelidade' GROUP BY pq.nome_porta, pq.numero_qubits_alvo ORDER BY categoria DESC, fidelidade_media DESC;
     `;
     const result = await pool.query(query); res.json(result.rows);
@@ -518,7 +518,7 @@ app.get('/api/relatorios/temperatura', async (req, res) => {
   try {
     const query = `
       SELECT ra.temperatura, AVG(mq.valor) as taxa_erro_media
-      FROM RegistroAmbiente ra JOIN Experimento e ON ra.id_registro_ambiente = e.id_registro_ambiente JOIN MedeQubit mq ON e.id_experimento = mq.id_experimento
+      FROM RegistroAmbiente ra JOIN Experimento e ON ra.id_registro_ambiente = e.id_registro_ambiente JOIN Experimento_Qubit mq ON e.id_experimento = mq.id_experimento
       WHERE mq.nome_metrica = 'TaxaErro' GROUP BY ra.temperatura ORDER BY ra.temperatura;
     `;
     const result = await pool.query(query); res.json(result.rows);
@@ -530,8 +530,8 @@ app.get('/api/dashboard/qubits/:id_qpu', async (req, res) => {
   try {
     const { id_qpu } = req.params;
     const mapaResult = await pool.query(`SELECT id_qubit, indice_qubit, status_qubit, status_qubit as status_operacional FROM Qubit WHERE id_qpu = $1::integer ORDER BY indice_qubit;`, [id_qpu]);
-    const cardsResult = await pool.query(`SELECT mq.nome_metrica, AVG(mq.valor) as media FROM MedeQubit mq JOIN Qubit q ON mq.id_qubit = q.id_qubit WHERE q.id_qpu = $1::integer AND mq.nome_metrica IN ('T1', 'TaxaErro') GROUP BY mq.nome_metrica;`, [id_qpu]);
-    const fidResult = await pool.query(`SELECT pq.numero_qubits_alvo, AVG(mp.valor) as media FROM MedePorta mp JOIN PortaQuantica pq ON mp.id_porta = pq.id_porta JOIN Experimento e ON mp.id_experimento = e.id_experimento WHERE e.id_qpu = $1::integer AND mp.nome_metrica = 'Fidelidade' GROUP BY pq.numero_qubits_alvo;`, [id_qpu]);
+    const cardsResult = await pool.query(`SELECT mq.nome_metrica, AVG(mq.valor) as media FROM Experimento_Qubit mq JOIN Qubit q ON mq.id_qubit = q.id_qubit WHERE q.id_qpu = $1::integer AND mq.nome_metrica IN ('T1', 'TaxaErro') GROUP BY mq.nome_metrica;`, [id_qpu]);
+    const fidResult = await pool.query(`SELECT pq.numero_qubits_alvo, AVG(mp.valor) as media FROM Experimento_Porta mp JOIN PortaQuantica pq ON mp.id_porta = pq.id_porta JOIN Experimento e ON mp.id_experimento = e.id_experimento WHERE e.id_qpu = $1::integer AND mp.nome_metrica = 'Fidelidade' GROUP BY pq.numero_qubits_alvo;`, [id_qpu]);
     
     // Histórico de Fidelidades (1Q e 2Q) por dia
     const histFidResult = await pool.query(`
@@ -539,7 +539,7 @@ app.get('/api/dashboard/qubits/:id_qpu', async (req, res) => {
         TO_CHAR(mp.data_hora_medicao, 'DD/MM') as data,
         pq.numero_qubits_alvo,
         AVG(mp.valor) as media
-      FROM MedePorta mp
+      FROM Experimento_Porta mp
       JOIN PortaQuantica pq ON mp.id_porta = pq.id_porta
       JOIN Experimento e ON mp.id_experimento = e.id_experimento
       WHERE e.id_qpu = $1::integer AND mp.nome_metrica = 'Fidelidade'
@@ -553,7 +553,7 @@ app.get('/api/dashboard/qubits/:id_qpu', async (req, res) => {
       SELECT 
         TO_CHAR(mq.data_hora_medicao, 'DD/MM') as data,
         AVG(mq.valor) as media
-      FROM MedeQubit mq
+      FROM Experimento_Qubit mq
       JOIN Qubit q ON mq.id_qubit = q.id_qubit
       WHERE q.id_qpu = $1::integer AND mq.nome_metrica = 'TaxaErro'
       GROUP BY TO_CHAR(mq.data_hora_medicao, 'DD/MM'), DATE(mq.data_hora_medicao)
@@ -573,7 +573,7 @@ app.get('/api/dashboard/qubits/:id_qpu', async (req, res) => {
         ra.pressao,
         ra.vibracao
       FROM Experimento e
-      LEFT JOIN pesquisador p ON e.id_pesquisador = p.id_pesquisador
+      LEFT JOIN Pesquisador p ON e.id_pesquisador = p.id_pesquisador
       LEFT JOIN RegistroAmbiente ra ON e.id_registro_ambiente = ra.id_registro_ambiente
       WHERE e.id_qpu = $1::integer
       ORDER BY e.data_hora_inicio DESC, e.id_experimento DESC
@@ -587,7 +587,7 @@ app.get('/api/dashboard/qubits/:id_qpu', async (req, res) => {
           mq.id_qubit, 
           mq.valor as t1_valor,
           ROW_NUMBER() OVER (PARTITION BY mq.id_qubit ORDER BY mq.data_hora_medicao DESC) as rn
-        FROM MedeQubit mq
+        FROM Experimento_Qubit mq
         JOIN Qubit q ON mq.id_qubit = q.id_qubit
         WHERE q.id_qpu = $1::integer AND mq.nome_metrica = 'T1'
       )
@@ -613,7 +613,7 @@ app.get('/api/dashboard/qubits/:id_qpu', async (req, res) => {
 app.get('/api/dashboard/ambiente/:id_qpu', async (req, res) => {
   try {
     const { id_qpu } = req.params;
-    const result = await pool.query(`SELECT ra.temperatura, ra.pressao, ra.vibracao FROM RegistroAmbiente ra JOIN Experimento e ON ra.id_registro_ambiente = e.id_registro_ambiente JOIN MedeQubit mq ON e.id_experimento = mq.id_experimento JOIN Qubit q ON mq.id_qubit = q.id_qubit WHERE q.id_qpu = $1::integer ORDER BY ra.data_hora_registro DESC LIMIT 1;`, [id_qpu]);
+    const result = await pool.query(`SELECT ra.temperatura, ra.pressao, ra.vibracao FROM RegistroAmbiente ra JOIN Experimento e ON ra.id_registro_ambiente = e.id_registro_ambiente JOIN Experimento_Qubit mq ON e.id_experimento = mq.id_experimento JOIN Qubit q ON mq.id_qubit = q.id_qubit WHERE q.id_qpu = $1::integer ORDER BY ra.data_hora_registro DESC LIMIT 1;`, [id_qpu]);
     res.json(result.rows[0] || { temperatura: 0, pressao: 0, vibracao: 0 });
   } catch (err) { console.error(err.message); res.status(500).send('Erro no Dashboard Ambiente'); }
 });
@@ -673,7 +673,7 @@ function getMockResponse(message) {
   
   if (msg.includes('qpu') || msg.includes('hardware')) {
     return {
-      sql: "SELECT nome, fabricante, modelo, status_operacional FROM qpu WHERE status_operacional = 'Ativo';",
+      sql: "SELECT nome, fabricante, modelo, status_operacional FROM Qpu WHERE status_operacional = 'Ativo';",
       template: (rows) => {
         if (!rows || rows.length === 0) return "Não encontrei nenhuma QPU ativa no momento no banco de dados.";
         let res = "Olá! Identifiquei as seguintes QPUs ativas no banco de dados (Modo Demonstrativo/Contingência):\n\n";
@@ -688,7 +688,7 @@ function getMockResponse(message) {
   
   if (msg.includes('qubit') && (msg.includes('t1') || msg.includes('relaxamento') || msg.includes('menor'))) {
     return {
-      sql: "SELECT q.id_qubit, q.indice_qubit, q.id_qpu, mq.valor FROM qubit q JOIN medequbit mq ON q.id_qubit = mq.id_qubit WHERE mq.nome_metrica = 'T1' ORDER BY mq.valor ASC LIMIT 5;",
+      sql: "SELECT q.id_qubit, q.indice_qubit, q.id_qpu, mq.valor FROM Qubit q JOIN Experimento_Qubit mq ON q.id_qubit = mq.id_qubit WHERE mq.nome_metrica = 'T1' ORDER BY mq.valor ASC LIMIT 5;",
       template: (rows) => {
         if (!rows || rows.length === 0) return "Não há medições de T1 registradas no banco de dados.";
         let res = "Aqui está a análise de tempos de relaxamento T1 (menores valores) do banco de dados (Modo Demonstrativo/Contingência):\n\n";
@@ -703,7 +703,7 @@ function getMockResponse(message) {
   
   if (msg.includes('qubit') && (msg.includes('instavel') || msg.includes('inoperante') || msg.includes('problema') || msg.includes('status'))) {
     return {
-      sql: "SELECT id_qubit, indice_qubit, status_qubit, id_qpu FROM qubit WHERE status_qubit IN ('Atenção', 'Inativo');",
+      sql: "SELECT id_qubit, indice_qubit, status_qubit, id_qpu FROM Qubit WHERE status_qubit IN ('Atenção', 'Inativo');",
       template: (rows) => {
         if (!rows || rows.length === 0) return "Excelente notícia! Todos os qubits cadastrados estão ativos no banco de dados (Modo Demonstrativo/Contingência).";
         let res = "Atenção, identifiquei qubits com anomalias no banco de dados:\n\n";
@@ -717,7 +717,7 @@ function getMockResponse(message) {
   
   if (msg.includes('criostato') || msg.includes('temperatura')) {
     return {
-      sql: "SELECT nome, fabricante, modelo, temperatura_nominal FROM criostato WHERE temperatura_nominal < 0.1;",
+      sql: "SELECT nome, fabricante, modelo, temperatura_nominal FROM Criostato WHERE temperatura_nominal < 0.1;",
       template: (rows) => {
         if (!rows || rows.length === 0) return "Nenhum criostato operando abaixo de 0.1 K foi encontrado.";
         let res = "Os seguintes criostatos de diluição ultra-fria estão ativos no banco (Modo Demonstrativo/Contingência):\n\n";
@@ -731,7 +731,7 @@ function getMockResponse(message) {
 
   if (msg.includes('calibrac') || msg.includes('sucesso') || msg.includes('resultado')) {
     return {
-      sql: "SELECT resultado, COUNT(*) as total FROM calibracao GROUP BY resultado;",
+      sql: "SELECT resultado, COUNT(*) as total FROM Calibracao GROUP BY resultado;",
       template: (rows) => {
         if (!rows || rows.length === 0) return "Nenhuma calibração encontrada no histórico.";
         let res = "Aqui está o resumo das calibrações de hardware do banco (Modo Demonstrativo/Contingência):\n\n";
@@ -776,29 +776,29 @@ Sua principal função é atuar como um colega de laboratório (co-worker) para 
 
 Você tem acesso a um banco de dados PostgreSQL com as seguintes tabelas e estruturas exatas (use sempre nomes de tabelas e colunas em minúsculas nas queries):
 
-1. qpu (id_qpu, nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato)
+1. Qpu (id_qpu, nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato)
    - Valores típicos para status_operacional: 'Ativo', 'Manutenção', 'Inativo'
-2. criostato (id_criostato, nome, fabricante, modelo, temperatura_nominal, status_operacional)
+2. Criostato (id_criostato, nome, fabricante, modelo, temperatura_nominal, status_operacional)
    - Valores típicos para status_operacional: 'Ativo', 'Manutenção', 'Inativo'
-3. qubit (id_qubit, indice_qubit, tipo_qubit, frequencia_ressonancia, status_qubit, observacoes, id_qpu)
+3. Qubit (id_qubit, indice_qubit, tipo_qubit, frequencia_ressonancia, status_qubit, observacoes, id_qpu)
    - Valores típicos para status_qubit: 'Ativo', 'Atenção', 'Inativo'
-4. pesquisador (id_pesquisador, nome, email, instituicao, area_atuacao)
-5. experimento (id_experimento, nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
-6. calibracao (id_calibracao, data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
+4. Pesquisador (id_pesquisador, nome, email, instituicao, area_atuacao)
+5. Experimento (id_experimento, nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
+6. Calibracao (id_calibracao, data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
    - Valores típicos para resultado: 'Sucesso', 'Falha'
-7. registroambiente (id_registro_ambiente, data_hora_registro, temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes)
-8. medequbit (id_experimento, id_qubit, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao, observacoes)
+7. RegistroAmbiente (id_registro_ambiente, data_hora_registro, temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes)
+8. Experimento_Qubit (id_experimento, id_qubit, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao, observacoes)
    - Valores típicos para nome_metrica: 'T1', 'T2', 'Fidelidade', 'TaxaErro'
-9. medeporta (id_experimento, id_porta, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao, observacoes)
+9. Experimento_Porta (id_experimento, id_porta, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao, observacoes)
    - Valores típicos para nome_metrica: 'Fidelidade'
-10. portaquantica (id_porta, nome_porta, categoria, numero_qubits_alvo, descricao)
-11. sequenciapulso (id_sequencia, nome, finalidade, versao, descricao)
-12. pulso (id_pulso, ordem, tipo_pulso, amplitude, duracao, frequencia, fase, forma_onda, id_sequencia)
-13. abrange (id_calibracao, id_qubit, parametro_ajustado, valor_antes, valor_depois)
-14. atuasobre (id_porta, id_qubit)
-15. implementa (id_sequencia, id_porta)
-16. utilizacalibracao (id_calibracao, id_sequencia)
-17. utilizaexperimento (id_experimento, id_sequencia)
+10. PortaQuantica (id_porta, nome_porta, categoria, numero_qubits_alvo, descricao)
+11. SequenciaPulso (id_sequencia, nome, finalidade, versao, descricao)
+12. Pulso (id_pulso, ordem, tipo_pulso, amplitude, duracao, frequencia, fase, forma_onda, id_sequencia)
+13. Calibracao_Qubit (id_calibracao, id_qubit, parametro_ajustado, valor_antes, valor_depois)
+14. Porta_Qubit (id_porta, id_qubit)
+15. SequenciaPulso_Porta (id_sequencia, id_porta)
+16. SequenciaPulso_Calibracao (id_calibracao, id_sequencia)
+17. SequenciaPulso_Experimento (id_experimento, id_sequencia)
 
 Regras Importantes de Execução (Conversa e Interpretação):
 1. **Seja Conversacional e Amigável:** Não se limite a responder apenas com dados puros. Responda saudações (como "Oi", "Olá", "Tudo bem?"), agradecimentos, apresente-se como o Copilot e mantenha uma atitude acolhedora e prestativa de colega de trabalho.
@@ -812,11 +812,11 @@ Regras Importantes de Execução (Conversa e Interpretação):
 
 Exemplos de Tradução (NLP-to-SQL):
 - Pergunta: "Olá, pode me dizer quais QPUs estão ativas?"
-  Resposta: [SQL] SELECT nome, fabricante, modelo, status_operacional FROM qpu WHERE status_operacional = 'Operacional';
+  Resposta: [SQL] SELECT nome, fabricante, modelo, status_operacional FROM Qpu WHERE status_operacional = 'Operacional';
 - Pergunta: "Quais qubits tem o menor T1?"
-  Resposta: [SQL] SELECT q.id_qubit, q.indice_qubit, q.id_qpu, mq.valor as t1_valor FROM qubit q JOIN medequbit mq ON q.id_qubit = mq.id_qubit WHERE mq.nome_metrica = 'T1' ORDER BY mq.valor ASC LIMIT 5;
+  Resposta: [SQL] SELECT q.id_qubit, q.indice_qubit, q.id_qpu, mq.valor as t1_valor FROM Qubit q JOIN Experimento_Qubit mq ON q.id_qubit = mq.id_qubit WHERE mq.nome_metrica = 'T1' ORDER BY mq.valor ASC LIMIT 5;
 - Pergunta: "Quem fez mais experimentos aqui no laboratório?"
-  Resposta: [SQL] SELECT p.nome, COUNT(e.id_experimento) as total_experimentos FROM pesquisador p JOIN experimento e ON p.id_pesquisador = e.id_pesquisador GROUP BY p.nome ORDER BY total_experimentos DESC LIMIT 3;`;
+  Resposta: [SQL] SELECT p.nome, COUNT(e.id_experimento) as total_experimentos FROM Pesquisador p JOIN Experimento e ON p.id_pesquisador = e.id_pesquisador GROUP BY p.nome ORDER BY total_experimentos DESC LIMIT 3;`;
 
     const contents = [];
     
@@ -986,33 +986,33 @@ app.post('/api/db/init', async (req, res) => {
 
     // 1. RegistroAmbiente
     await client.query(`
-      CREATE TABLE IF NOT EXISTS registroambiente (
+      CREATE TABLE IF NOT EXISTS RegistroAmbiente (
         id_registro_ambiente SERIAL PRIMARY KEY,
         data_hora_registro TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-        temperatura DECIMAL(10,4),
-        pressao DECIMAL(10,4),
-        umidade DECIMAL(10,4),
-        vibracao DECIMAL(10,4),
-        campo_magnetico DECIMAL(10,4),
+        temperatura NUMERIC(10,4),
+        pressao NUMERIC(10,4),
+        umidade NUMERIC(10,4),
+        vibracao NUMERIC(10,4),
+        campo_magnetico NUMERIC(10,4),
         observacoes TEXT
       );
     `);
 
     // 2. Criostato
     await client.query(`
-      CREATE TABLE IF NOT EXISTS criostato (
+      CREATE TABLE IF NOT EXISTS Criostato (
         id_criostato SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         fabricante VARCHAR(255),
         modelo VARCHAR(255),
-        temperatura_nominal DECIMAL(10,4),
+        temperatura_nominal NUMERIC(10,4),
         status_operacional VARCHAR(255) DEFAULT 'Ativo'
       );
     `);
 
     // 3. Pesquisador
     await client.query(`
-      CREATE TABLE IF NOT EXISTS pesquisador (
+      CREATE TABLE IF NOT EXISTS Pesquisador (
         id_pesquisador SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         email VARCHAR(255) UNIQUE,
@@ -1021,9 +1021,9 @@ app.post('/api/db/init', async (req, res) => {
       );
     `);
 
-    // 4. QPU
+    // 4. Qpu
     await client.query(`
-      CREATE TABLE IF NOT EXISTS qpu (
+      CREATE TABLE IF NOT EXISTS Qpu (
         id_qpu SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         fabricante VARCHAR(255),
@@ -1031,26 +1031,26 @@ app.post('/api/db/init', async (req, res) => {
         tecnologia VARCHAR(255),
         data_instalacao DATE,
         status_operacional VARCHAR(255) DEFAULT 'Ativo',
-        id_criostato INT NOT NULL REFERENCES criostato(id_criostato) ON DELETE RESTRICT
+        id_criostato INT NOT NULL REFERENCES Criostato(id_criostato) ON DELETE RESTRICT
       );
     `);
 
     // 5. Qubit
     await client.query(`
-      CREATE TABLE IF NOT EXISTS qubit (
+      CREATE TABLE IF NOT EXISTS Qubit (
         id_qubit SERIAL PRIMARY KEY,
         indice_qubit INT,
         tipo_qubit VARCHAR(255),
-        frequencia_ressonancia DECIMAL(10,4),
+        frequencia_ressonancia NUMERIC(10,4),
         status_qubit VARCHAR(255) DEFAULT 'Ativo',
         observacoes TEXT,
-        id_qpu INT NOT NULL REFERENCES qpu(id_qpu) ON DELETE CASCADE
+        id_qpu INT NOT NULL REFERENCES Qpu(id_qpu) ON DELETE CASCADE
       );
     `);
 
     // 6. Experimento
     await client.query(`
-      CREATE TABLE IF NOT EXISTS experimento (
+      CREATE TABLE IF NOT EXISTS Experimento (
         id_experimento SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         objetivo TEXT,
@@ -1058,15 +1058,15 @@ app.post('/api/db/init', async (req, res) => {
         data_hora_fim TIMESTAMP WITHOUT TIME ZONE,
         status_execucao VARCHAR(255) DEFAULT 'Planejado',
         observacoes TEXT,
-        id_pesquisador INT NOT NULL REFERENCES pesquisador(id_pesquisador) ON DELETE RESTRICT,
-        id_qpu INT NOT NULL REFERENCES qpu(id_qpu) ON DELETE CASCADE,
-        id_registro_ambiente INT REFERENCES registroambiente(id_registro_ambiente) ON DELETE SET NULL
+        id_pesquisador INT NOT NULL REFERENCES Pesquisador(id_pesquisador) ON DELETE RESTRICT,
+        id_qpu INT NOT NULL REFERENCES Qpu(id_qpu) ON DELETE CASCADE,
+        id_registro_ambiente INT REFERENCES RegistroAmbiente(id_registro_ambiente) ON DELETE SET NULL
       );
     `);
 
     // 7. Calibracao
     await client.query(`
-      CREATE TABLE IF NOT EXISTS calibracao (
+      CREATE TABLE IF NOT EXISTS Calibracao (
         id_calibracao SERIAL PRIMARY KEY,
         data_hora_inicio TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         data_hora_fim TIMESTAMP WITHOUT TIME ZONE,
@@ -1074,19 +1074,19 @@ app.post('/api/db/init', async (req, res) => {
         versao_parametros VARCHAR(255),
         resultado VARCHAR(255),
         observacoes TEXT,
-        id_pesquisador INT NOT NULL REFERENCES pesquisador(id_pesquisador) ON DELETE RESTRICT,
-        id_qpu INT NOT NULL REFERENCES qpu(id_qpu) ON DELETE CASCADE,
-        id_registro_ambiente INT REFERENCES registroambiente(id_registro_ambiente) ON DELETE SET NULL
+        id_pesquisador INT NOT NULL REFERENCES Pesquisador(id_pesquisador) ON DELETE RESTRICT,
+        id_qpu INT NOT NULL REFERENCES Qpu(id_qpu) ON DELETE CASCADE,
+        id_registro_ambiente INT REFERENCES RegistroAmbiente(id_registro_ambiente) ON DELETE SET NULL
       );
     `);
 
-    // 8. MedeQubit
+    // 8. Experimento_Qubit
     await client.query(`
-      CREATE TABLE IF NOT EXISTS medequbit (
-        id_experimento INT REFERENCES experimento(id_experimento) ON DELETE CASCADE,
-        id_qubit INT REFERENCES qubit(id_qubit) ON DELETE CASCADE,
+      CREATE TABLE IF NOT EXISTS Experimento_Qubit (
+        id_experimento INT REFERENCES Experimento(id_experimento) ON DELETE CASCADE,
+        id_qubit INT REFERENCES Qubit(id_qubit) ON DELETE CASCADE,
         nome_metrica VARCHAR(255) NOT NULL,
-        valor DECIMAL(12,6),
+        valor NUMERIC(12,6),
         unidade VARCHAR(255),
         data_hora_medicao TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         metodo_obtencao VARCHAR(255),
@@ -1097,7 +1097,7 @@ app.post('/api/db/init', async (req, res) => {
 
     // 9. PortaQuantica
     await client.query(`
-      CREATE TABLE IF NOT EXISTS portaquantica (
+      CREATE TABLE IF NOT EXISTS PortaQuantica (
         id_porta SERIAL PRIMARY KEY,
         nome_porta VARCHAR(255) NOT NULL,
         categoria VARCHAR(255),
@@ -1106,13 +1106,13 @@ app.post('/api/db/init', async (req, res) => {
       );
     `);
 
-    // 10. MedePorta
+    // 10. Experimento_Porta
     await client.query(`
-      CREATE TABLE IF NOT EXISTS medeporta (
-        id_experimento INT REFERENCES experimento(id_experimento) ON DELETE CASCADE,
-        id_porta INT REFERENCES portaquantica(id_porta) ON DELETE CASCADE,
+      CREATE TABLE IF NOT EXISTS Experimento_Porta (
+        id_experimento INT REFERENCES Experimento(id_experimento) ON DELETE CASCADE,
+        id_porta INT REFERENCES PortaQuantica(id_porta) ON DELETE CASCADE,
         nome_metrica VARCHAR(255) NOT NULL,
-        valor DECIMAL(12,6),
+        valor NUMERIC(12,6),
         unidade VARCHAR(255),
         data_hora_medicao TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         metodo_obtencao VARCHAR(255),
@@ -1123,7 +1123,7 @@ app.post('/api/db/init', async (req, res) => {
 
     // 11. SequenciaPulso
     await client.query(`
-      CREATE TABLE IF NOT EXISTS sequenciapulso (
+      CREATE TABLE IF NOT EXISTS SequenciaPulso (
         id_sequencia SERIAL PRIMARY KEY,
         nome VARCHAR(255),
         finalidade VARCHAR(255),
@@ -1134,90 +1134,90 @@ app.post('/api/db/init', async (req, res) => {
 
     // 12. Pulso
     await client.query(`
-      CREATE TABLE IF NOT EXISTS pulso (
+      CREATE TABLE IF NOT EXISTS Pulso (
         id_pulso SERIAL PRIMARY KEY,
         ordem INT,
         tipo_pulso VARCHAR(255),
-        amplitude DECIMAL(10,4),
-        duracao DECIMAL(10,4),
-        frequencia DECIMAL(10,4),
-        fase DECIMAL(10,4),
+        amplitude NUMERIC(10,4),
+        duracao NUMERIC(10,4),
+        frequencia NUMERIC(10,4),
+        fase NUMERIC(10,4),
         forma_onda VARCHAR(255),
-        id_sequencia INT NOT NULL REFERENCES sequenciapulso(id_sequencia) ON DELETE CASCADE
+        id_sequencia INT NOT NULL REFERENCES SequenciaPulso(id_sequencia) ON DELETE CASCADE
       );
     `);
 
-    // 13. Implementa (Relação N:M)
+    // 13. SequenciaPulso_Porta (Relação N:M)
     await client.query(`
-      CREATE TABLE IF NOT EXISTS implementa (
-        id_sequencia INT REFERENCES sequenciapulso(id_sequencia) ON DELETE CASCADE,
-        id_porta INT REFERENCES portaquantica(id_porta) ON DELETE CASCADE,
+      CREATE TABLE IF NOT EXISTS SequenciaPulso_Porta (
+        id_sequencia INT REFERENCES SequenciaPulso(id_sequencia) ON DELETE CASCADE,
+        id_porta INT REFERENCES PortaQuantica(id_porta) ON DELETE CASCADE,
         PRIMARY KEY (id_sequencia, id_porta)
       );
     `);
 
-    // 14. AtuaSobre (Relação N:M)
+    // 14. Porta_Qubit (Relação N:M)
     await client.query(`
-      CREATE TABLE IF NOT EXISTS atuasobre (
-        id_porta INT REFERENCES portaquantica(id_porta) ON DELETE CASCADE,
-        id_qubit INT REFERENCES qubit(id_qubit) ON DELETE CASCADE,
+      CREATE TABLE IF NOT EXISTS Porta_Qubit (
+        id_porta INT REFERENCES PortaQuantica(id_porta) ON DELETE CASCADE,
+        id_qubit INT REFERENCES Qubit(id_qubit) ON DELETE CASCADE,
         PRIMARY KEY (id_porta, id_qubit)
       );
     `);
 
-    // 15. UtilizaCalibracao (Relação N:M)
+    // 15. SequenciaPulso_Calibracao (Relação N:M)
     await client.query(`
-      CREATE TABLE IF NOT EXISTS utilizacalibracao (
-        id_calibracao INT REFERENCES calibracao(id_calibracao) ON DELETE CASCADE,
-        id_sequencia INT REFERENCES sequenciapulso(id_sequencia) ON DELETE CASCADE,
+      CREATE TABLE IF NOT EXISTS SequenciaPulso_Calibracao (
+        id_calibracao INT REFERENCES Calibracao(id_calibracao) ON DELETE CASCADE,
+        id_sequencia INT REFERENCES SequenciaPulso(id_sequencia) ON DELETE CASCADE,
         PRIMARY KEY (id_calibracao, id_sequencia)
       );
     `);
 
-    // 16. UtilizaExperimento (Relação N:M)
+    // 16. SequenciaPulso_Experimento (Relação N:M)
     await client.query(`
-      CREATE TABLE IF NOT EXISTS utilizaexperimento (
-        id_experimento INT REFERENCES experimento(id_experimento) ON DELETE CASCADE,
-        id_sequencia INT REFERENCES sequenciapulso(id_sequencia) ON DELETE CASCADE,
+      CREATE TABLE IF NOT EXISTS SequenciaPulso_Experimento (
+        id_experimento INT REFERENCES Experimento(id_experimento) ON DELETE CASCADE,
+        id_sequencia INT REFERENCES SequenciaPulso(id_sequencia) ON DELETE CASCADE,
         PRIMARY KEY (id_experimento, id_sequencia)
       );
     `);
 
-    // 17. Abrange (Relação N:M)
+    // 17. Calibracao_Qubit (Relação N:M)
     await client.query(`
-      CREATE TABLE IF NOT EXISTS abrange (
-        id_calibracao INT REFERENCES calibracao(id_calibracao) ON DELETE CASCADE,
-        id_qubit INT REFERENCES qubit(id_qubit) ON DELETE CASCADE,
+      CREATE TABLE IF NOT EXISTS Calibracao_Qubit (
+        id_calibracao INT REFERENCES Calibracao(id_calibracao) ON DELETE CASCADE,
+        id_qubit INT REFERENCES Qubit(id_qubit) ON DELETE CASCADE,
         parametro_ajustado VARCHAR(255),
-        valor_antes DECIMAL(12,6),
-        valor_depois DECIMAL(12,6),
+        valor_antes NUMERIC(12,6),
+        valor_depois NUMERIC(12,6),
         PRIMARY KEY (id_calibracao, id_qubit)
       );
     `);
 
     // Carga de dados (inserindo apenas se as tabelas estiverem vazias para evitar duplicados)
-    const countQpus = await client.query('SELECT COUNT(*) FROM qpu;');
+    const countQpus = await client.query('SELECT COUNT(*) FROM Qpu;');
     if (parseInt(countQpus.rows[0].count) === 0) {
       // Criostatos
-      await client.query("INSERT INTO criostato (nome, fabricante, modelo, temperatura_nominal, status_operacional) VALUES ('Criostato Principal', 'Bluefors', 'LD250', 0.0100, 'Ativo'), ('Criostato de Testes', 'Oxford Instruments', 'Triton', 0.0150, 'Ativo');");
+      await client.query("INSERT INTO Criostato (nome, fabricante, modelo, temperatura_nominal, status_operacional) VALUES ('Criostato Principal', 'Bluefors', 'LD250', 0.0100, 'Ativo'), ('Criostato de Testes', 'Oxford Instruments', 'Triton', 0.0150, 'Ativo');");
       
       // QPUs (cada uma com 20 qubits)
-      await client.query("INSERT INTO qpu (nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato) VALUES ('QPU Triton-20', 'IBM', 'Quantum Eagle v3', 'Supercondutor', '2025-01-15', 'Ativo', 1), ('QPU Borealis-20', 'Xanadu', 'Photonic 20Q', 'Fotônica', '2025-05-10', 'Ativo', 2);");
+      await client.query("INSERT INTO Qpu (nome, fabricante, modelo, tecnologia, data_instalacao, status_operacional, id_criostato) VALUES ('QPU Triton-20', 'IBM', 'Quantum Eagle v3', 'Supercondutor', '2025-01-15', 'Ativo', 1), ('QPU Borealis-20', 'Xanadu', 'Photonic 20Q', 'Fotônica', '2025-05-10', 'Ativo', 2);");
 
       // Qubits para Triton-20
       for (let i = 0; i < 20; i++) {
         let status = 'Ativo';
         if (i === 13) status = 'Inativo';
         else if ([5, 17].includes(i)) status = 'Atenção';
-        await client.query(`INSERT INTO qubit (indice_qubit, tipo_qubit, frequencia_ressonancia, status_qubit, observacoes, id_qpu) VALUES ($1, 'Transmon', $2, $3, 'Qubit padrão da grade supercondutora', 1);`, [i, 5.0 + i * 0.05, status]);
+        await client.query(`INSERT INTO Qubit (indice_qubit, tipo_qubit, frequencia_ressonancia, status_qubit, observacoes, id_qpu) VALUES ($1, 'Transmon', $2, $3, 'Qubit padrão da grade supercondutora', 1);`, [i, 5.0 + i * 0.05, status]);
       }
       // Qubits para Borealis-20
       for (let i = 0; i < 20; i++) {
-        await client.query(`INSERT INTO qubit (indice_qubit, tipo_qubit, frequencia_ressonancia, status_qubit, observacoes, id_qpu) VALUES ($1, 'Fóton polarizado', $2, 'Ativo', 'Qubit óptico', 2);`, [i, 193.1 + i * 0.1]);
+        await client.query(`INSERT INTO Qubit (indice_qubit, tipo_qubit, frequencia_ressonancia, status_qubit, observacoes, id_qpu) VALUES ($1, 'Fóton polarizado', $2, 'Ativo', 'Qubit óptico', 2);`, [i, 193.1 + i * 0.1]);
       }
 
       // Pesquisadores
-      await client.query("INSERT INTO pesquisador (nome, email, instituicao, area_atuacao) VALUES ('Dr. Alice Smith', 'alice@ufsc.br', 'UFSC', 'Controle Quântico'), ('Bob Jones', 'bob@ufsc.br', 'UFSC', 'Mitigação de Erros');");
+      await client.query("INSERT INTO Pesquisador (nome, email, instituicao, area_atuacao) VALUES ('Dr. Alice Smith', 'alice@ufsc.br', 'UFSC', 'Controle Quântico'), ('Bob Jones', 'bob@ufsc.br', 'UFSC', 'Mitigação de Erros');");
 
       // Gerar registros ambientais para os últimos 105 dias
       const ambValues = [];
@@ -1248,7 +1248,7 @@ app.post('/api/db/init', async (req, res) => {
       }
       
       const ambResult = await client.query(`
-        INSERT INTO registroambiente (data_hora_registro, temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes)
+        INSERT INTO RegistroAmbiente (data_hora_registro, temperatura, pressao, umidade, vibracao, campo_magnetico, observacoes)
         VALUES ${ambValues.join(',\n')}
         RETURNING id_registro_ambiente, temperatura;
       `);
@@ -1285,7 +1285,7 @@ app.post('/api/db/init', async (req, res) => {
       expValues.push(`('Simulação VQE', 'Rodar algoritmo VQE para molécula de H2', NOW(), NULL, 'Planejado', 'Executando em background', 2, 1, ${ambId0})`);
       
       const insertExpQuery = `
-        INSERT INTO experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
+        INSERT INTO Experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
         VALUES ${expValues.join(',\n')}
         RETURNING id_experimento, id_qpu;
       `;
@@ -1314,7 +1314,7 @@ app.post('/api/db/init', async (req, res) => {
       calValues.push(`(NOW() - (52 * INTERVAL '1 day'), NOW() - (52 * INTERVAL '1 day') + INTERVAL '45 minutes', 'Alinhamento Ótico', 'v2.0.48', 'Falha', 'Perda de lock térmico no criostato', 1, 1, ${ambIdFailed})`);
 
       const insertCalQuery = `
-        INSERT INTO calibracao (data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) 
+        INSERT INTO Calibracao (data_hora_inicio, data_hora_fim, tipo_calibracao, versao_parametros, resultado, observacoes, id_pesquisador, id_qpu, id_registro_ambiente) 
         VALUES ${calValues.join(',\n')}
         RETURNING id_calibracao, id_qpu;
       `;
@@ -1323,7 +1323,7 @@ app.post('/api/db/init', async (req, res) => {
 
       // Porta Quantica (9 portas)
       const gateInsertQuery = `
-        INSERT INTO portaquantica (nome_porta, categoria, numero_qubits_alvo, descricao)
+        INSERT INTO PortaQuantica (nome_porta, categoria, numero_qubits_alvo, descricao)
         VALUES 
         ('Hadamard', '1-Qubit', 1, 'Cria superposição de estados (eixo X + Z)'),
         ('Pauli-X', '1-Qubit', 1, 'Porta NOT quântica (inversão de qubit)'),
@@ -1340,7 +1340,7 @@ app.post('/api/db/init', async (req, res) => {
       const gatesRows = gatesResult.rows;
 
       // MedeQubit (T1 e TaxaErro) dinâmico para todos os qubits gerados, associando ao experimento de cada dia
-      const allQubits = await client.query('SELECT id_qubit, indice_qubit, id_qpu FROM qubit;');
+      const allQubits = await client.query('SELECT id_qubit, indice_qubit, id_qpu FROM Qubit;');
       const qubitsByQpu = {
         1: allQubits.rows.filter(q => q.id_qpu === 1),
         2: allQubits.rows.filter(q => q.id_qpu === 2)
@@ -1394,7 +1394,7 @@ app.post('/api/db/init', async (req, res) => {
       const batchSize = 1000;
       for (let i = 0; i < qubitValues.length; i += batchSize) {
         const batch = qubitValues.slice(i, i + batchSize);
-        const insertBatchQuery = `INSERT INTO medequbit (id_experimento, id_qubit, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES ${batch.join(',\n')};`;
+        const insertBatchQuery = `INSERT INTO Experimento_Qubit (id_experimento, id_qubit, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES ${batch.join(',\n')};`;
         await client.query(insertBatchQuery);
       }
 
@@ -1444,13 +1444,13 @@ app.post('/api/db/init', async (req, res) => {
       
       for (let i = 0; i < portaValues.length; i += batchSize) {
         const batch = portaValues.slice(i, i + batchSize);
-        const insertBatchQuery = `INSERT INTO medeporta (id_experimento, id_porta, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES ${batch.join(',\n')};`;
+        const insertBatchQuery = `INSERT INTO Experimento_Porta (id_experimento, id_porta, nome_metrica, valor, unidade, data_hora_medicao, metodo_obtencao) VALUES ${batch.join(',\n')};`;
         await client.query(insertBatchQuery);
       }
 
       // Sequencias de Pulso
       await client.query(`
-        INSERT INTO sequenciapulso (nome, finalidade, versao, descricao) 
+        INSERT INTO SequenciaPulso (nome, finalidade, versao, descricao) 
         VALUES 
         ('Seq-RB-1Q', 'Fidelidade', 'v1.0.0', 'Sequência de Clifford para Randomized Benchmarking de 1 qubit'), 
         ('Seq-Calib-Pi', 'Calibração', 'v2.1.0', 'Sequência de pulso de pi para calibração de amplitude'),
@@ -1459,7 +1459,7 @@ app.post('/api/db/init', async (req, res) => {
 
       // Pulsos
       await client.query(`
-        INSERT INTO pulso (ordem, tipo_pulso, amplitude, duracao, frequencia, fase, forma_onda, id_sequencia) 
+        INSERT INTO Pulso (ordem, tipo_pulso, amplitude, duracao, frequencia, fase, forma_onda, id_sequencia) 
         VALUES 
         (1, 'Gaussian', 0.50, 20.0, 5.12, 0.0, 'Gaussiana', 1), 
         (2, 'DRAG', 0.48, 20.0, 5.12, 90.0, 'Formato DRAG', 1), 
@@ -1471,7 +1471,7 @@ app.post('/api/db/init', async (req, res) => {
 
       // Relações N:M (Seed)
       await client.query(`
-        INSERT INTO implementa (id_sequencia, id_porta) 
+        INSERT INTO SequenciaPulso_Porta (id_sequencia, id_porta) 
         VALUES 
         (1, 1), -- Seq-RB-1Q implementa Hadamard
         (2, 2), -- Seq-Calib-Pi implementa Pauli-X
@@ -1479,7 +1479,7 @@ app.post('/api/db/init', async (req, res) => {
       `);
 
       await client.query(`
-        INSERT INTO atuasobre (id_porta, id_qubit) VALUES 
+        INSERT INTO Porta_Qubit (id_porta, id_qubit) VALUES 
         (1, 1), -- Hadamard no qubit 1
         (2, 2), -- Pauli-X no qubit 2
         (3, 3), -- Pauli-Y no qubit 3
@@ -1511,12 +1511,12 @@ app.post('/api/db/init', async (req, res) => {
       }
       
       if (abrangeValues.length > 0) {
-        await client.query(`INSERT INTO abrange (id_calibracao, id_qubit, parametro_ajustado, valor_antes, valor_depois) VALUES ${abrangeValues.join(',\n')};`);
+        await client.query(`INSERT INTO Calibracao_Qubit (id_calibracao, id_qubit, parametro_ajustado, valor_antes, valor_depois) VALUES ${abrangeValues.join(',\n')};`);
       }
       if (utilizacalValues.length > 0) {
-        await client.query(`INSERT INTO utilizacalibracao (id_calibracao, id_sequencia) VALUES ${utilizacalValues.join(',\n')};`);
+        await client.query(`INSERT INTO SequenciaPulso_Calibracao (id_calibracao, id_sequencia) VALUES ${utilizacalValues.join(',\n')};`);
       }
-      // Popular utilizaexperimento (associa cada experimento com uma sequência de pulsos)
+      // Popular SequenciaPulso_Experimento (associa cada experimento com uma sequência de pulsos)
       const utilizaexpValues = [];
       // Exp ID 1 (Fidelidade CNOT) -> Seq-RB-1Q (ID 1)
       utilizaexpValues.push(`(1, 1)`);
@@ -1535,7 +1535,7 @@ app.post('/api/db/init', async (req, res) => {
       utilizaexpValues.push(`(${expRows[204].id_experimento}, 3)`);
 
       if (utilizaexpValues.length > 0) {
-        await client.query(`INSERT INTO utilizaexperimento (id_experimento, id_sequencia) VALUES ${utilizaexpValues.join(',\n')};`);
+        await client.query(`INSERT INTO SequenciaPulso_Experimento (id_experimento, id_sequencia) VALUES ${utilizaexpValues.join(',\n')};`);
       }
     }
 
@@ -1556,37 +1556,37 @@ app.post('/api/db/drop', async (req, res) => {
     await client.query('BEGIN');
     
     // Deleta as tabelas relacionais N:M primeiro por causa das dependências
-    await client.query('DROP TABLE IF EXISTS abrange CASCADE;');
-    await client.query('DROP TABLE IF EXISTS utilizaexperimento CASCADE;');
-    await client.query('DROP TABLE IF EXISTS utilizacalibracao CASCADE;');
-    await client.query('DROP TABLE IF EXISTS atuasobre CASCADE;');
-    await client.query('DROP TABLE IF EXISTS implementa CASCADE;');
+    await client.query('DROP TABLE IF EXISTS Calibracao_Qubit CASCADE;');
+    await client.query('DROP TABLE IF EXISTS SequenciaPulso_Experimento CASCADE;');
+    await client.query('DROP TABLE IF EXISTS SequenciaPulso_Calibracao CASCADE;');
+    await client.query('DROP TABLE IF EXISTS Porta_Qubit CASCADE;');
+    await client.query('DROP TABLE IF EXISTS SequenciaPulso_Porta CASCADE;');
     
     // Deleta as tabelas com dependências secundárias
-    await client.query('DROP TABLE IF EXISTS pulso CASCADE;');
-    await client.query('DROP TABLE IF EXISTS sequenciapulso CASCADE;');
-    await client.query('DROP TABLE IF EXISTS medeporta CASCADE;');
-    await client.query('DROP TABLE IF EXISTS portaquantica CASCADE;');
-    await client.query('DROP TABLE IF EXISTS medequbit CASCADE;');
-    await client.query('DROP TABLE IF EXISTS calibracao CASCADE;');
-    await client.query('DROP TABLE IF EXISTS experimento CASCADE;');
-    await client.query('DROP TABLE IF EXISTS qubit CASCADE;');
-    await client.query('DROP TABLE IF EXISTS qpu CASCADE;');
-    await client.query('DROP TABLE IF EXISTS criostato CASCADE;');
-    await client.query('DROP TABLE IF EXISTS registroambiente CASCADE;');
-    await client.query('DROP TABLE IF EXISTS pesquisador CASCADE;');
+    await client.query('DROP TABLE IF EXISTS Pulso CASCADE;');
+    await client.query('DROP TABLE IF EXISTS SequenciaPulso CASCADE;');
+    await client.query('DROP TABLE IF EXISTS Experimento_Porta CASCADE;');
+    await client.query('DROP TABLE IF EXISTS PortaQuantica CASCADE;');
+    await client.query('DROP TABLE IF EXISTS Experimento_Qubit CASCADE;');
+    await client.query('DROP TABLE IF EXISTS Calibracao CASCADE;');
+    await client.query('DROP TABLE IF EXISTS Experimento CASCADE;');
+    await client.query('DROP TABLE IF EXISTS Qubit CASCADE;');
+    await client.query('DROP TABLE IF EXISTS Qpu CASCADE;');
+    await client.query('DROP TABLE IF EXISTS Criostato CASCADE;');
+    await client.query('DROP TABLE IF EXISTS RegistroAmbiente CASCADE;');
+    await client.query('DROP TABLE IF EXISTS Pesquisador CASCADE;');
     
     // Deleta sequências residuais
-    await client.query('DROP SEQUENCE IF EXISTS qpu_id_qpu_seq CASCADE;');
-    await client.query('DROP SEQUENCE IF EXISTS pesquisador_id_pesquisador_seq CASCADE;');
-    await client.query('DROP SEQUENCE IF EXISTS qubit_id_qubit_seq CASCADE;');
-    await client.query('DROP SEQUENCE IF EXISTS criostato_id_criostato_seq CASCADE;');
-    await client.query('DROP SEQUENCE IF EXISTS experimento_id_experimento_seq CASCADE;');
-    await client.query('DROP SEQUENCE IF EXISTS calibracao_id_calibracao_seq CASCADE;');
-    await client.query('DROP SEQUENCE IF EXISTS sequenciapulso_id_sequencia_seq CASCADE;');
-    await client.query('DROP SEQUENCE IF EXISTS pulso_id_pulso_seq CASCADE;');
-    await client.query('DROP SEQUENCE IF EXISTS portaquantica_id_porta_seq CASCADE;');
-    await client.query('DROP SEQUENCE IF EXISTS registroambiente_id_registro_ambiente_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS Qpu_id_qpu_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS Pesquisador_id_pesquisador_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS Qubit_id_qubit_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS Criostato_id_criostato_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS Experimento_id_experimento_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS Calibracao_id_calibracao_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS SequenciaPulso_id_sequencia_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS Pulso_id_pulso_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS PortaQuantica_id_porta_seq CASCADE;');
+    await client.query('DROP SEQUENCE IF EXISTS RegistroAmbiente_id_registro_ambiente_seq CASCADE;');
 
     await client.query('COMMIT');
     res.json({ message: "Todas as 17 tabelas e sequências foram eliminadas com sucesso!" });

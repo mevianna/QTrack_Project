@@ -560,7 +560,7 @@ function App() {
                 <div>
                   <h2 style={{ color: 'var(--text-main)' }}>Consulta 1: Evolução Diária do Tempo de Coerência (T1)</h2>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-                    <strong style={{ color: 'var(--text-main)' }}>Objetivo:</strong> Monitorar a degradação física do hardware comparando o T1 médio por processador e mapeando o qubit mais instável do dia. Envolve as tabelas <em>MedeQubit</em>, <em>Qubit</em> e <em>QPU</em>.
+                    <strong style={{ color: 'var(--text-main)' }}>Objetivo:</strong> Monitorar a degradação física do hardware comparando o T1 médio por processador e mapeando o qubit mais instável do dia. Envolve as tabelas <em>Experimento_Qubit</em>, <em>Qubit</em> e <em>Qpu</em>.
                   </p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -644,13 +644,13 @@ function App() {
                   <pre style={{ color: '#c084fc', fontSize: '0.75rem', whiteSpace: 'pre-wrap', background: '#0f172a', padding: '10px', borderRadius: '6px', fontFamily: 'monospace', border: '1px solid #1e293b', margin: 0 }}>
 {`WITH diario_qpu AS (
   SELECT p.id_qpu, p.nome as qpu_nome, DATE(mq.data_hora_medicao) as data, AVG(mq.valor) as media_t1
-  FROM MedeQubit mq JOIN Qubit q ON mq.id_qubit = q.id_qubit JOIN QPU p ON q.id_qpu = p.id_qpu
+  FROM Experimento_Qubit mq JOIN Qubit q ON mq.id_qubit = q.id_qubit JOIN Qpu p ON q.id_qpu = p.id_qpu
   WHERE mq.nome_metrica = 'T1' GROUP BY p.id_qpu, p.nome, DATE(mq.data_hora_medicao)
 ),
 ranqueamento_piores AS (
   SELECT q.id_qpu, DATE(mq.data_hora_medicao) as data, mq.id_qubit as pior_qubit_id, mq.valor as pior_valor_t1,
   ROW_NUMBER() OVER(PARTITION BY q.id_qpu, DATE(mq.data_hora_medicao) ORDER BY mq.valor ASC) as rn
-  FROM MedeQubit mq JOIN Qubit q ON mq.id_qubit = q.id_qubit WHERE mq.nome_metrica = 'T1'
+  FROM Experimento_Qubit mq JOIN Qubit q ON mq.id_qubit = q.id_qubit WHERE mq.nome_metrica = 'T1'
 )
 SELECT d.qpu_nome, d.data, d.media_t1, r.pior_qubit_id, r.pior_valor_t1
 FROM diario_qpu d LEFT JOIN ranqueamento_piores r ON d.id_qpu = r.id_qpu AND d.data = r.data AND r.rn = 1
@@ -666,7 +666,7 @@ ORDER BY d.data ASC, d.qpu_nome ASC;`}
                 <div>
                   <h2 style={{ color: 'var(--text-main)' }}>Consulta 2: Fidelidade Média por Porta Quântica</h2>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>
-                    <strong style={{ color: 'var(--text-main)' }}>Objetivo:</strong> Calcular a média geral de fidelidade por operation física para avaliar se as portas de acoplamento mais complexas (2 Qubits) estão sofrendo taxas de erro maiores. Envolve as tabelas <em>MedePorta</em>, <em>PortaQuantica</em> e <em>Experimento</em>.
+                    <strong style={{ color: 'var(--text-main)' }}>Objetivo:</strong> Calcular a média geral de fidelidade por operation física para avaliar se as portas de acoplamento mais complexas (2 Qubits) estão sofrendo taxas de erro maiores. Envolve as tabelas <em>Experimento_Porta</em>, <em>PortaQuantica</em> e <em>Experimento</em>.
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '15px', fontSize: '0.85rem', background: 'var(--bg-main)', padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
@@ -727,7 +727,7 @@ ORDER BY d.data ASC, d.qpu_nome ASC;`}
                 <div style={{ marginTop: '12px' }}>
                   <pre style={{ color: '#c084fc', fontSize: '0.75rem', whiteSpace: 'pre-wrap', background: '#0f172a', padding: '10px', borderRadius: '6px', fontFamily: 'monospace', border: '1px solid #1e293b', margin: 0 }}>
 {`SELECT pq.nome_porta, pq.numero_qubits_alvo || ' Qubit(s)' as categoria, AVG(mp.valor) as fidelidade_media
-FROM MedePorta mp JOIN PortaQuantica pq ON mp.id_porta = pq.id_porta JOIN Experimento e ON mp.id_experimento = e.id_experimento
+FROM Experimento_Porta mp JOIN PortaQuantica pq ON mp.id_porta = pq.id_porta JOIN Experimento e ON mp.id_experimento = e.id_experimento
 WHERE mp.nome_metrica = 'Fidelidade' GROUP BY pq.nome_porta, pq.numero_qubits_alvo ORDER BY categoria DESC, fidelidade_media DESC;`}
                   </pre>
                 </div>
@@ -738,7 +738,7 @@ WHERE mp.nome_metrica = 'Fidelidade' GROUP BY pq.nome_porta, pq.numero_qubits_al
             <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <h2 style={{ color: 'var(--text-main)' }}>Consulta 3: Impacto da Temperatura do Criostato na Taxa de Erro</h2>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                <strong style={{ color: 'var(--text-main)' }}>Objetivo:</strong> Avaliar se flutuações na temperatura do ambiente criogênico estão correlacionadas com o aumento da taxa média de erro de leitura dos qubits. Envolve as tabelas <em>RegistroAmbiente</em>, <em>Experimento</em> e <em>MedeQubit</em>.
+                <strong style={{ color: 'var(--text-main)' }}>Objetivo:</strong> Avaliar se flutuações na temperatura do ambiente criogênico estão correlacionadas com o aumento da taxa média de erro de leitura dos qubits. Envolve as tabelas <em>RegistroAmbiente</em>, <em>Experimento</em> e <em>Experimento_Qubit</em>.
               </p>
               <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '10px' }}>
                 <div style={{ flex: '1 1 40%', height: '250px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
@@ -780,7 +780,7 @@ WHERE mp.nome_metrica = 'Fidelidade' GROUP BY pq.nome_porta, pq.numero_qubits_al
                 <div style={{ marginTop: '12px' }}>
                   <pre style={{ color: '#c084fc', fontSize: '0.75rem', whiteSpace: 'pre-wrap', background: '#0f172a', padding: '10px', borderRadius: '6px', fontFamily: 'monospace', border: '1px solid #1e293b', margin: 0 }}>
 {`SELECT ra.temperatura, AVG(mq.valor) as taxa_erro_media
-FROM RegistroAmbiente ra JOIN Experimento e ON ra.id_registro_ambiente = e.id_registro_ambiente JOIN MedeQubit mq ON e.id_experimento = mq.id_experimento
+FROM RegistroAmbiente ra JOIN Experimento e ON ra.id_registro_ambiente = e.id_registro_ambiente JOIN Experimento_Qubit mq ON e.id_experimento = mq.id_experimento
 WHERE mq.nome_metrica = 'TaxaErro' GROUP BY ra.temperatura ORDER BY ra.temperatura;`}
                   </pre>
                 </div>
@@ -1374,11 +1374,11 @@ WHERE mq.nome_metrica = 'TaxaErro' GROUP BY ra.temperatura ORDER BY ra.temperatu
               </div>
             )}
 
-            {/* Qubits Calibrados (Abrange) - APENAS para Calibrações */}
+            {/* Qubits Calibrados (Calibracao_Qubit) - APENAS para Calibrações */}
             {detalhesDados.type === 'calibracao' && (
               <>
                 <h3 style={{ fontSize: '1.05rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px', marginBottom: '12px', color: 'var(--accent-purple)' }}>
-                  Qubits Calibrados (Relação Abrange)
+                  Qubits Calibrados (Relação Calibracao_Qubit)
                 </h3>
                 {detalhesDados.qubitsCalibrados && detalhesDados.qubitsCalibrados.length > 0 ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '25px' }}>
@@ -1406,7 +1406,7 @@ WHERE mq.nome_metrica = 'TaxaErro' GROUP BY ra.temperatura ORDER BY ra.temperatu
                   </div>
                 ) : (
                   <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem', marginBottom: '25px', backgroundColor: 'rgba(255,255,255,0.01)', padding: '12px', borderRadius: '8px', border: '1px dashed rgba(255,255,255,0.08)' }}>
-                    Nenhum qubit associado a esta calibração no registro abrange.
+                    Nenhum qubit associado a esta calibração no registro Calibracao_Qubit.
                   </div>
                 )}
               </>

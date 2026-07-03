@@ -7,13 +7,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'qtrack',
-  password: '1234',
-  port: 5432,
-});
+let dbConfig = {
+  user: process.env.PGUSER || 'postgres',
+  host: process.env.PGHOST || 'localhost',
+  database: process.env.PGDATABASE || 'qtrack',
+  password: process.env.PGPASSWORD || '1234',
+  port: parseInt(process.env.PGPORT || '5432'),
+};
+
+let pool = new Pool(dbConfig);
+
 
 // Auxiliar para popular selects de logs ambientais nas chaves estrangeiras
 app.get('/api/registro-ambiente', async (req, res) => {
@@ -1596,6 +1599,35 @@ app.post('/api/db/drop', async (req, res) => {
     res.status(500).send("Erro ao eliminar as tabelas: " + err.message);
   } finally {
     client.release();
+  }
+});
+
+app.post('/api/db/config', async (req, res) => {
+  const { user, host, database, password, port } = req.body;
+  try {
+    const tempConfig = {
+      user: user || 'postgres',
+      host: host || 'localhost',
+      database: database || 'qtrack',
+      password: password !== undefined ? password : '1234',
+      port: parseInt(port || '5432'),
+    };
+    
+    // Test connection
+    const tempPool = new Pool(tempConfig);
+    const client = await tempPool.connect();
+    client.release();
+    await tempPool.end();
+
+    // Recreate active pool
+    await pool.end();
+    dbConfig = tempConfig;
+    pool = new Pool(dbConfig);
+    console.log(`Conexão com o banco atualizada: ${dbConfig.database} no host ${dbConfig.host}`);
+    res.json({ message: "Conexão com o banco de dados atualizada e testada com sucesso!" });
+  } catch (err) {
+    console.error("Erro ao atualizar conexão com o banco:", err);
+    res.status(500).json({ error: "Falha ao conectar com os dados informados: " + err.message });
   }
 });
 

@@ -175,6 +175,13 @@ function App() {
     distribuicaoT1: []
   })
 
+  // Estados de Conexão com o Banco de Dados
+  const [dbUser, setDbUser] = useState('postgres')
+  const [dbPassword, setDbPassword] = useState('1234')
+  const [dbName, setDbName] = useState('qtrack')
+  const [dbHost, setDbHost] = useState('localhost')
+  const [dbPort, setDbPort] = useState('5432')
+  const [loadingConfig, setLoadingConfig] = useState(false)
 
   // ================= LIMPEZA DE FORMULÁRIOS =================
   const limparFormulario = () => {
@@ -1136,6 +1143,108 @@ WHERE mq.nome_metrica = 'TaxaErro' GROUP BY ra.temperatura ORDER BY ra.temperatu
               <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
                 Gerenciamento estrutural do banco de dados (Requisito de Inicialização e Reset).
               </p>
+            </div>
+
+            <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '15px', maxWidth: '600px' }}>
+              <h3 style={{ color: 'var(--text-main)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>🔑 Credenciais de Conexão</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0, lineHeight: '1.4' }}>
+                Caso o banco de dados do seu PostgreSQL local tenha credenciais diferentes das padrões (1234/qtrack), configure-as abaixo antes de inicializar ou consultar os dados.
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Usuário</label>
+                  <input 
+                    type="text" 
+                    value={dbUser} 
+                    onChange={(e) => setDbUser(e.target.value)} 
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Senha</label>
+                  <input 
+                    type="password" 
+                    value={dbPassword} 
+                    onChange={(e) => setDbPassword(e.target.value)} 
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '15px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Nome do Banco</label>
+                  <input 
+                    type="text" 
+                    value={dbName} 
+                    onChange={(e) => setDbName(e.target.value)} 
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Host</label>
+                  <input 
+                    type="text" 
+                    value={dbHost} 
+                    onChange={(e) => setDbHost(e.target.value)} 
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>Porta</label>
+                  <input 
+                    type="text" 
+                    value={dbPort} 
+                    onChange={(e) => setDbPort(e.target.value)} 
+                    style={{ padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', color: 'var(--text-main)' }}
+                  />
+                </div>
+              </div>
+
+              <button 
+                onClick={async () => {
+                  setLoadingConfig(true);
+                  try {
+                    const res = await fetch('http://localhost:8000/api/db/config', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ user: dbUser, password: dbPassword, database: dbName, host: dbHost, port: dbPort })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      alert(data.message);
+                      // Recarrega todos os dados nos estados locais com o novo banco conectado
+                      fetch('http://localhost:8000/api/qpus').then(res => res.json()).then(dados => { setListaQpus(dados); if (dados.length > 0) setQpuSelecionada(dados[0].id_qpu); });
+                      fetch('http://localhost:8000/api/criostatos').then(res => res.json()).then(dados => setListaCriostatos(dados));
+                      fetch('http://localhost:8000/api/pesquisadores').then(res => res.json()).then(dados => setListaPesquisadores(dados));
+                      fetch('http://localhost:8000/api/qubits').then(res => res.json()).then(dados => setListaQubits(dados));
+                      fetch('http://localhost:8000/api/experimentos').then(res => res.json()).then(dados => setListaExperimentos(dados));
+                      fetch('http://localhost:8000/api/calibracoes').then(res => res.json()).then(dados => setListaCalibracoes(dados));
+                    } else {
+                      alert("Erro: " + data.error);
+                    }
+                  } catch (err) {
+                    alert("Erro ao conectar com o servidor: " + err.message);
+                  } finally {
+                    setLoadingConfig(false);
+                  }
+                }}
+                disabled={loadingConfig}
+                style={{ 
+                  padding: '12px 20px', 
+                  background: 'var(--accent-purple)', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '8px', 
+                  cursor: 'pointer', 
+                  fontWeight: 'bold',
+                  marginTop: '10px',
+                  alignSelf: 'flex-start'
+                }}
+              >
+                {loadingConfig ? 'Conectando...' : 'Salvar e Testar Conexão'}
+              </button>
             </div>
 
             <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '600px' }}>

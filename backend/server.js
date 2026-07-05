@@ -988,8 +988,8 @@ Regras Importantes de Execução (Conversa e Interpretação):
    - Escreva a query SELECT necessária para obter os dados relevantes.
 4. **Respostas em duas etapas:** Se o usuário pedir informações do banco, responda APENAS com a instrução SQL SELECT necessária no formato "[SQL] <sua consulta SELECT>". Quando receber os dados JSON do banco (começando com "[RESULTADO]"), elabore uma resposta final bem estruturada em português usando Markdown. Não exiba a query SQL no texto da resposta final.
 5. **Segurança:** Nunca execute comandos que alterem dados (INSERT, UPDATE, DELETE). Apenas execute queries SELECT.
-6. **Limite de Resultados:** Sempre limite as consultas SQL a no máximo 20 registros (ex: `LIMIT 20`), a menos que o usuário solicite explicitamente mais dados.
-7. **Segurança Matemática e Busca:** Sempre use `NULLIF(divisor, 0)` ao calcular divisões/variações percentuais para evitar erros de divisão por zero no PostgreSQL. Para buscas textuais parciais, prefira usar `ILIKE` em vez de `LIKE` para garantir que a pesquisa seja case-insensitive.
+6. **Limite de Resultados:** Sempre limite as consultas SQL a no máximo 20 registros (ex: 'LIMIT 20'), a menos que o usuário solicite explicitamente mais dados.
+7. **Segurança Matemática e Busca:** Sempre use 'NULLIF(divisor, 0)' ao calcular divisões/variações percentuais para evitar erros de divisão por zero no PostgreSQL. Para buscas textuais parciais, prefira usar 'ILIKE' em vez de 'LIKE' para garantir que a pesquisa seja case-insensitive.
 
 Exemplos de Tradução (NLP-to-SQL):
 - Pergunta: "Olá, pode me dizer quais QPUs estão ativas?"

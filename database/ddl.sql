@@ -68,7 +68,8 @@ CREATE TABLE Experimento (
     observacoes TEXT,
     id_pesquisador INT NOT NULL REFERENCES Pesquisador(id_pesquisador) ON DELETE RESTRICT,
     id_qpu INT NOT NULL REFERENCES Qpu(id_qpu) ON DELETE CASCADE,
-    id_registro_ambiente INT REFERENCES RegistroAmbiente(id_registro_ambiente) ON DELETE SET NULL
+    id_registro_ambiente INT REFERENCES RegistroAmbiente(id_registro_ambiente) ON DELETE SET NULL,
+    UNIQUE (id_pesquisador, id_qpu, data_hora_inicio)
 );
 
 -- 7. Calibracao
@@ -82,7 +83,8 @@ CREATE TABLE Calibracao (
     observacoes TEXT,
     id_pesquisador INT NOT NULL REFERENCES Pesquisador(id_pesquisador) ON DELETE RESTRICT,
     id_qpu INT NOT NULL REFERENCES Qpu(id_qpu) ON DELETE CASCADE,
-    id_registro_ambiente INT REFERENCES RegistroAmbiente(id_registro_ambiente) ON DELETE SET NULL
+    id_registro_ambiente INT REFERENCES RegistroAmbiente(id_registro_ambiente) ON DELETE SET NULL,
+    UNIQUE (id_pesquisador, id_qpu, data_hora_inicio)
 );
 
 -- 8. Experimento_Qubit

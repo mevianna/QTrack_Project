@@ -1277,7 +1277,8 @@ app.post('/api/db/init', async (req, res) => {
         observacoes TEXT,
         id_pesquisador INT NOT NULL REFERENCES Pesquisador(id_pesquisador) ON DELETE RESTRICT,
         id_qpu INT NOT NULL REFERENCES Qpu(id_qpu) ON DELETE CASCADE,
-        id_registro_ambiente INT REFERENCES RegistroAmbiente(id_registro_ambiente) ON DELETE SET NULL
+        id_registro_ambiente INT REFERENCES RegistroAmbiente(id_registro_ambiente) ON DELETE SET NULL,
+        UNIQUE (id_pesquisador, id_qpu, data_hora_inicio)
       );
     `);
 
@@ -1293,7 +1294,8 @@ app.post('/api/db/init', async (req, res) => {
         observacoes TEXT,
         id_pesquisador INT NOT NULL REFERENCES Pesquisador(id_pesquisador) ON DELETE RESTRICT,
         id_qpu INT NOT NULL REFERENCES Qpu(id_qpu) ON DELETE CASCADE,
-        id_registro_ambiente INT REFERENCES RegistroAmbiente(id_registro_ambiente) ON DELETE SET NULL
+        id_registro_ambiente INT REFERENCES RegistroAmbiente(id_registro_ambiente) ON DELETE SET NULL,
+        UNIQUE (id_pesquisador, id_qpu, data_hora_inicio)
       );
     `);
 
@@ -1506,7 +1508,7 @@ app.post('/api/db/init', async (req, res) => {
       
       // Experimento extra 204 (Simulação VQE) na QPU 1: planejado para hoje
       const ambId0 = ambRows[105].id_registro_ambiente; // 105 - 0 = 105
-      expValues.push(`('Simulação VQE', 'Rodar algoritmo VQE para molécula de H2', NOW(), NULL, 'Planejado', 'Executando em background', 2, 1, ${ambId0})`);
+      expValues.push(`('Simulação VQE', 'Rodar algoritmo VQE para molécula de H2', NOW() + INTERVAL '2 hours', NULL, 'Planejado', 'Executando em background', 2, 1, ${ambId0})`);
       
       const insertExpQuery = `
         INSERT INTO Experimento (nome, objetivo, data_hora_inicio, data_hora_fim, status_execucao, observacoes, id_pesquisador, id_qpu, id_registro_ambiente)
